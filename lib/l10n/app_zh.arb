@@ -1,0 +1,159 @@
+{
+  "@@locale": "zh",
+  "appTitle": "Flaxtter",
+  "login": "登入",
+  "loginX": "登入 X",
+  "loginPrompt": "登入 X 帳號以瀏覽內容",
+  "logout": "登出",
+  "search": "搜索",
+  "home": "首页",
+  "me": "我",
+  "user": "用戶",
+  "searchTweetsHint": "搜索推文，或输入 @用户名",
+  "noResults": "暫無結果",
+  "retry": "重試",
+  "scrollToRetryLoading": "加载失败，继续下滑或点击重试。",
+  "reachedEnd": "你滑到底了",
+  "loadFailed": "載入失敗：{error}",
+  "profileLoadFailed": "無法載入用戶：{error}",
+  "tweetsLoadFailed": "載入推文失敗：{error}",
+  "tweetsLoadMoreFailed": "載入更多失敗：{error}",
+  "noTweets": "暫無推文",
+  "profileStats": "{followers} 粉絲 · {tweets} 推文",
+  "usernameLabel": "用戶名",
+  "usernameHint": "@username",
+  "viewProfile": "查看用戶主頁",
+  "tweetUnavailable": "此推文不可用",
+  "userNotFound": "找不到用戶",
+  "saveImage": "保存图像",
+  "shareImage": "分享",
+  "copyLink": "复制链接",
+  "copyImage": "复制图像",
+  "imageSaved": "已保存至 {path}",
+  "@imageSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "linkCopied": "链接已复制",
+  "imageLinkCopied": "图像链接已复制",
+  "actionFailed": "操作失败：{error}",
+  "@actionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetDetail": "推文",
+  "retweetedBy": "{name} 转推了",
+  "@retweetedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTweetLink": "分享链接",
+  "shareTweetAsImage": "生成推文图片",
+  "tweetImageSavedAndCopied": "已保存至 {path}，并复制到剪贴板",
+  "@tweetImageSavedAndCopied": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetImageSaved": "已保存至 {path}（剪贴板复制失败，请安装 wl-copy 或 xclip）",
+  "@tweetImageSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "replies": "回复",
+  "noReplies": "暂无回复",
+  "profileTweets": "推文",
+  "profileReplies": "回复",
+  "profileMedia": "媒体",
+  "following": "正在关注",
+  "followers": "关注者",
+  "profileTweetCount": "{tweets} 推文",
+  "@profileTweetCount": {
+    "placeholders": {
+      "tweets": {
+        "type": "int"
+      }
+    }
+  },
+  "followsLoadFailed": "无法加载列表：{error}",
+  "@followsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "followsLoadMoreFailed": "加载更多失败：{error}",
+  "@followsLoadMoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noFollowing": "尚未关注任何人",
+  "noFollowers": "尚无关注者",
+  "follow": "关注",
+  "unfollow": "取消关注",
+  "loginRequired": "请先登录",
+  "searchLatest": "最新",
+  "searchTrending": "热门",
+  "trendingTopics": "流行趋势",
+  "noTrends": "暂无流行趋势",
+  "trendsLoadFailed": "无法加载流行趋势：{error}",
+  "@trendsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "trendTweetCount": "{count} 则推文",
+  "@trendTweetCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "scrollToTop": "回到顶部",
+  "refresh": "刷新",
+  "cancel": "取消",
+  "post": "发布",
+  "reply": "回复",
+  "replyHint": "写下你的回复",
+  "quoteHint": "添加评论",
+  "quoteTweet": "引用",
+  "repost": "转推",
+  "unretweet": "取消转推",
+  "confirmUnretweet": "是否取消转推？",
+  "replyingTo": "回复 @{screenName}",
+  "@replyingTo": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetPosted": "已发布",
+  "copyTweetText": "复制文字",
+  "tweetTextCopied": "文字已复制",
+  "deleteTweet": "删除",
+  "confirmDeleteTweet": "确定删除这条推文？",
+  "tweetDeleted": "已删除",
+  "tweetManage": "管理"
+}

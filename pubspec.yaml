@@ -1,0 +1,55 @@
+name: flaxtter
+description: A Twitter/X client for Linux and Android.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  collection: ^1.19.0
+  dart_twitter_api: ^0.6.0
+  ffcache: ^1.1.0
+  html_unescape: ^2.0.0
+  http: ^1.5.0
+  infinite_scroll_pagination: ^5.1.1
+  intl: ^0.20.2
+  linkify: ^5.0.0
+  logging: ^1.2.0
+  path: ^1.9.0
+  path_provider: ^2.1.5
+  provider: ^6.1.1
+  quiver: ^3.2.2
+  sqflite: ^2.4.0
+  sqflite_common_ffi: ^2.3.4
+  synchronized: ^3.3.0
+  timeago: ^3.7.0
+  url_launcher: ^6.3.1
+  share_plus: ^11.0.0
+  webview_flutter: ^4.13.0
+  webview_cookie_manager_plus: ^2.0.17
+  html: ^0.15.6
+  crypto: ^3.0.7
+  desktop_webview_linux:
+    path: packages/desktop_webview_linux
+  gal: ^2.3.2
+  material_symbols_icons: ^4.2928.1
+  dynamic_color: ^1.8.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  generate: true
+  fonts:
+    - family: GoogleSansFlex
+      fonts:
+        - asset: assets/fonts/GoogleSansFlex.ttf

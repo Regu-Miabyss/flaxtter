@@ -1,0 +1,197 @@
+{
+  "@@locale": "en",
+  "appTitle": "Flaxtter",
+  "login": "Log in",
+  "loginX": "Log in to X",
+  "loginPrompt": "Log in to your X account to browse content",
+  "logout": "Log out",
+  "search": "Search",
+  "home": "Home",
+  "me": "Me",
+  "user": "User",
+  "searchTweetsHint": "Search tweets, or @username",
+  "noResults": "No results",
+  "retry": "Retry",
+  "scrollToRetryLoading": "Couldn't load more. Scroll down or tap to retry.",
+  "reachedEnd": "You've reached the end.",
+  "loadFailed": "Failed to load: {error}",
+  "@loadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "profileLoadFailed": "Unable to load user: {error}",
+  "@profileLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetsLoadFailed": "Failed to load tweets: {error}",
+  "@tweetsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetsLoadMoreFailed": "Failed to load more: {error}",
+  "@tweetsLoadMoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noTweets": "No tweets",
+  "profileStats": "{followers} followers · {tweets} tweets",
+  "@profileStats": {
+    "placeholders": {
+      "followers": {
+        "type": "int"
+      },
+      "tweets": {
+        "type": "int"
+      }
+    }
+  },
+  "usernameLabel": "Username",
+  "usernameHint": "@username",
+  "viewProfile": "View profile",
+  "tweetUnavailable": "This tweet is unavailable",
+  "userNotFound": "User not found",
+  "saveImage": "Save image",
+  "shareImage": "Share",
+  "copyLink": "Copy link",
+  "copyImage": "Copy image",
+  "imageSaved": "Saved to {path}",
+  "@imageSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "linkCopied": "Link copied",
+  "imageLinkCopied": "Image link copied",
+  "actionFailed": "Action failed: {error}",
+  "@actionFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetDetail": "Tweet",
+  "retweetedBy": "{name} reposted",
+  "@retweetedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shareTweetLink": "Share link",
+  "shareTweetAsImage": "Share as image",
+  "tweetImageSavedAndCopied": "Saved to {path} and copied to clipboard",
+  "@tweetImageSavedAndCopied": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetImageSaved": "Saved to {path} (clipboard copy failed; install wl-copy or xclip)",
+  "@tweetImageSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "replies": "Replies",
+  "noReplies": "No replies",
+  "profileTweets": "Posts",
+  "profileReplies": "Replies",
+  "profileMedia": "Media",
+  "following": "Following",
+  "followers": "Followers",
+  "profileTweetCount": "{tweets} posts",
+  "@profileTweetCount": {
+    "placeholders": {
+      "tweets": {
+        "type": "int"
+      }
+    }
+  },
+  "followsLoadFailed": "Failed to load list: {error}",
+  "@followsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "followsLoadMoreFailed": "Failed to load more: {error}",
+  "@followsLoadMoreFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noFollowing": "Not following anyone",
+  "noFollowers": "No followers yet",
+  "follow": "Follow",
+  "unfollow": "Unfollow",
+  "loginRequired": "Please log in first",
+  "searchLatest": "Latest",
+  "searchTrending": "Top",
+  "trendingTopics": "Trending",
+  "noTrends": "No trending topics",
+  "trendsLoadFailed": "Failed to load trends: {error}",
+  "@trendsLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "trendTweetCount": "{count} posts",
+  "@trendTweetCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "scrollToTop": "Back to top",
+  "refresh": "Refresh",
+  "cancel": "Cancel",
+  "post": "Post",
+  "reply": "Reply",
+  "replyHint": "Post your reply",
+  "quoteHint": "Add a comment",
+  "quoteTweet": "Quote",
+  "repost": "Repost",
+  "unretweet": "Undo repost",
+  "confirmUnretweet": "Undo this repost?",
+  "replyingTo": "Replying to @{screenName}",
+  "@replyingTo": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "tweetPosted": "Posted",
+  "copyTweetText": "Copy text",
+  "tweetTextCopied": "Text copied",
+  "deleteTweet": "Delete",
+  "confirmDeleteTweet": "Delete this post?",
+  "tweetDeleted": "Deleted",
+  "tweetManage": "Manage"
+}
