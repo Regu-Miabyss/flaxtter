@@ -1,13 +1,27 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flaxtter/client/client.dart';
 import 'package:flaxtter/client/client_account.dart';
 import 'package:flaxtter/client/accounts.dart';
 import 'package:flaxtter/client/login/login_screen.dart';
+import 'package:flaxtter/features/bookmarks/bookmarks_screen.dart';
+import 'package:flaxtter/features/notifications/notifications_screen.dart';
 import 'package:flaxtter/features/profile/profile_screen.dart';
 import 'package:flaxtter/features/search/search_screen.dart';
 import 'package:flaxtter/features/timeline/timeline_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
+import 'package:flaxtter/utils/image_picker_utils.dart';
+import 'package:flaxtter/utils/media_actions.dart';
 import 'package:flaxtter/utils/notifiers.dart';
+import 'package:flaxtter/utils/profile_cache.dart';
+import 'package:flaxtter/utils/scroll_to_top_refresh_controller.dart';
+import 'package:flaxtter/widgets/compose_expandable_fab.dart';
+import 'package:flaxtter/widgets/tweet_compose_sheet.dart';
 import 'package:provider/provider.dart';
+
+enum _HomeTab { home, search, notifications, me }
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,26 +31,65 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  static final bool _isAndroid = Platform.isAndroid;
+
+  /// Android gets a notifications tab; desktop keeps it in the AppBar.
+  static final List<_HomeTab> _tabs = _isAndroid
+      ? const [_HomeTab.home, _HomeTab.search, _HomeTab.notifications, _HomeTab.me]
+      : const [_HomeTab.home, _HomeTab.search, _HomeTab.me];
+
   int _index = 0;
   String? _screenName;
+  String? _avatarUrl;
+  final _homeScrollAction = ScrollToTopRefreshController();
+  final _profileScrollAction = ScrollToTopRefreshController();
+  final _notificationsScrollAction = ScrollToTopRefreshController();
+  late final TweetActionNotifier _tweetActions;
 
   @override
   void initState() {
     super.initState();
-    _loadScreenName();
+    _tweetActions = context.read<TweetActionNotifier>();
+    _tweetActions.addListener(_onTweetAction);
+    _loadOwnAccount();
   }
 
-  Future<void> _loadScreenName() async {
-    final accounts = await getAccounts();
-    if (mounted && accounts.isNotEmpty) {
-      setState(() => _screenName = accounts.first.screenName);
+  @override
+  void dispose() {
+    _tweetActions.removeListener(_onTweetAction);
+    _homeScrollAction.dispose();
+    _profileScrollAction.dispose();
+    _notificationsScrollAction.dispose();
+    super.dispose();
+  }
+
+  void _onTweetAction() {
+    // A new tweet or quote appears in the home timeline: scroll up and refresh.
+    if (_tweetActions.event?.kind == TweetActionKind.posted) {
+      unawaited(_homeScrollAction.scrollToTopAndRefresh());
     }
   }
 
-  Future<void> _logout() async {
-    await TwitterAccount.logoutAll();
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/gate');
+  Future<void> _loadOwnAccount() async {
+    final accounts = await getAccounts();
+    if (!mounted || accounts.isEmpty) {
+      return;
+    }
+    final screenName = accounts.first.screenName;
+    setState(() => _screenName = screenName);
+
+    // Avatar for the bottom navigation: cached profile first, network fallback.
+    var profile = await getCachedProfile(screenName);
+    if (profile == null) {
+      try {
+        profile = await Twitter.getProfileByScreenName(screenName);
+        await cacheProfile(screenName, profile);
+      } catch (_) {
+        return;
+      }
+    }
+    if (mounted && profile.user.profileImageUrlHttps != null) {
+      setState(() => _avatarUrl = profile!.user.profileImageUrlHttps);
     }
   }
 
@@ -49,7 +102,123 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _searchHashtag(String hashtag) {
     context.read<SearchRequestNotifier>().requestSearch('#$hashtag');
-    setState(() => _index = 1);
+    setState(() => _index = _tabs.indexOf(_HomeTab.search));
+  }
+
+  ScrollToTopRefreshController? _scrollActionOf(_HomeTab tab) {
+    return switch (tab) {
+      _HomeTab.home => _homeScrollAction,
+      _HomeTab.notifications => _notificationsScrollAction,
+      _HomeTab.me => _profileScrollAction,
+      _HomeTab.search => null,
+    };
+  }
+
+  void _onDestinationSelected(int value) {
+    if (value == _index) {
+      final scrollAction = _scrollActionOf(_tabs[value]);
+      if (scrollAction != null && scrollAction.icon != TabNavScrollIcon.defaultIcon) {
+        scrollAction.handleNavTap();
+        return;
+      }
+    }
+    setState(() => _index = value);
+  }
+
+  Widget _navIcon(ScrollToTopRefreshController controller, Widget defaultIcon) {
+    return switch (controller.icon) {
+      TabNavScrollIcon.scrollToTop => const Icon(Icons.arrow_upward),
+      TabNavScrollIcon.refresh => const Icon(Icons.refresh),
+      TabNavScrollIcon.defaultIcon => defaultIcon,
+    };
+  }
+
+  Widget _avatarIcon() {
+    if (_avatarUrl == null) {
+      return const Icon(Icons.person);
+    }
+    return CircleAvatar(
+      radius: 13,
+      backgroundImage: NetworkImage(_avatarUrl!.replaceAll('normal', '200x200')),
+    );
+  }
+
+  Future<void> _openComposeTweet() async {
+    final posted = await showNewTweetComposeSheet(context);
+    if (posted && mounted) {
+      showMediaActionSnackBar(context, AppLocalizations.of(context).tweetPosted);
+    }
+  }
+
+  Future<void> _pickImagesAndCompose() async {
+    final picked = await pickComposeImages();
+    if (picked == null || !mounted) {
+      return;
+    }
+    final posted = await showNewTweetComposeSheet(
+      context,
+      imageBytes: picked.bytes,
+      imageMimeTypes: picked.mimeTypes,
+    );
+    if (posted && mounted) {
+      showMediaActionSnackBar(context, AppLocalizations.of(context).tweetPosted);
+    }
+  }
+
+  bool get _showComposeFab {
+    final tab = _tabs[_index];
+    return tab == _HomeTab.home || tab == _HomeTab.me;
+  }
+
+  Widget _buildTabBody(_HomeTab tab) {
+    switch (tab) {
+      case _HomeTab.home:
+        return TimelineScreen(
+          scrollActionController: _homeScrollAction,
+          onMentionTap: _openProfile,
+          onHashtagTap: _searchHashtag,
+        );
+      case _HomeTab.search:
+        return const SearchScreen();
+      case _HomeTab.notifications:
+        return NotificationsScreen(
+          embedded: true,
+          scrollActionController: _notificationsScrollAction,
+        );
+      case _HomeTab.me:
+        if (_screenName == null) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        return ProfileBody(
+          key: ValueKey(_screenName),
+          screenName: _screenName!,
+          onMentionTap: _openProfile,
+          onHashtagTap: _searchHashtag,
+          scrollActionController: _profileScrollAction,
+        );
+    }
+  }
+
+  NavigationDestination _buildDestination(_HomeTab tab, AppLocalizations l10n) {
+    switch (tab) {
+      case _HomeTab.home:
+        return NavigationDestination(
+          icon: _navIcon(_homeScrollAction, const Icon(Icons.home)),
+          label: l10n.home,
+        );
+      case _HomeTab.search:
+        return NavigationDestination(icon: const Icon(Icons.search), label: l10n.search);
+      case _HomeTab.notifications:
+        return NavigationDestination(
+          icon: _navIcon(_notificationsScrollAction, const Icon(Icons.notifications_none)),
+          label: l10n.notifications,
+        );
+      case _HomeTab.me:
+        return NavigationDestination(
+          icon: _navIcon(_profileScrollAction, _avatarIcon()),
+          label: l10n.me,
+        );
+    }
   }
 
   @override
@@ -58,49 +227,64 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       primary: false,
-      appBar: AppBar(
-        title: Text(l10n.appTitle),
-        actions: [
-          if (_screenName != null)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Center(child: Text('@$_screenName')),
+      appBar: _isAndroid
+          ? null
+          : AppBar(
+              title: Text(l10n.appTitle),
+              actions: [
+                if (_screenName != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Center(child: Text('@$_screenName')),
+                  ),
+                IconButton(
+                  tooltip: l10n.notifications,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                  ),
+                  icon: const Icon(Icons.notifications_none),
+                ),
+                IconButton(
+                  tooltip: l10n.bookmarks,
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+                  ),
+                  icon: const Icon(Icons.bookmark_border),
+                ),
+              ],
             ),
-          IconButton(
-            tooltip: l10n.logout,
-            onPressed: _logout,
-            icon: const Icon(Icons.logout),
-          ),
-        ],
+      body: SafeArea(
+        bottom: false,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            IndexedStack(
+              sizing: StackFit.expand,
+              index: _index,
+              children: [for (final tab in _tabs) _buildTabBody(tab)],
+            ),
+            if (_showComposeFab)
+              ComposeExpandableFab(
+                composeTooltip: l10n.composeTweet,
+                addPhotosTooltip: l10n.addPhotos,
+                newTweetTooltip: l10n.newTweet,
+                onComposeTweet: _openComposeTweet,
+                onPickImages: _pickImagesAndCompose,
+              ),
+          ],
+        ),
       ),
-      body: IndexedStack(
-        sizing: StackFit.expand,
-        index: _index,
-        children: [
-          TimelineScreen(
-            onMentionTap: _openProfile,
-            onHashtagTap: _searchHashtag,
-          ),
-          const SearchScreen(),
-          if (_screenName != null)
-            ProfileBody(
-              key: ValueKey(_screenName),
-              screenName: _screenName!,
-              onMentionTap: _openProfile,
-              onHashtagTap: _searchHashtag,
-            )
-          else
-            const Center(child: CircularProgressIndicator()),
-        ],
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: [
-          NavigationDestination(icon: const Icon(Icons.home), label: l10n.home),
-          NavigationDestination(icon: const Icon(Icons.search), label: l10n.search),
-          NavigationDestination(icon: const Icon(Icons.person), label: l10n.me),
-        ],
+      bottomNavigationBar: ListenableBuilder(
+        listenable: Listenable.merge(
+          [_homeScrollAction, _profileScrollAction, _notificationsScrollAction],
+        ),
+        builder: (context, _) => NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: _onDestinationSelected,
+          destinations: [for (final tab in _tabs) _buildDestination(tab, l10n)],
+        ),
       ),
     );
   }

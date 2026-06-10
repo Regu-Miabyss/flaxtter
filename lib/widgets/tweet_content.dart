@@ -3,10 +3,12 @@ import 'package:flaxtter/client/client.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/app_fonts.dart';
 import 'package:flaxtter/utils/interactive_content.dart';
+import 'package:flaxtter/utils/time_format.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
 import 'package:flaxtter/widgets/linkable_rich_text.dart';
 import 'package:flaxtter/widgets/tweet_media_gallery.dart';
-import 'package:timeago/timeago.dart' as timeago;
+import 'package:flaxtter/widgets/tweet_poll.dart';
+import 'package:flaxtter/widgets/tweet_video.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class TweetContent extends StatelessWidget {
@@ -49,6 +51,7 @@ class TweetContent extends StatelessWidget {
     final user = contentTweet.user;
     final createdAt = contentTweet.createdAt;
     final photoItems = tweetPhotoItems(tweet);
+    final videoItems = tweetVideoItems(tweet);
     final statusUrl = tweetStatusUrl(tweet);
     final padding = nested ? 8.0 : 0.0;
     final bodyInset = contentInset(nested: nested);
@@ -118,7 +121,7 @@ class TweetContent extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Text(
-                        timeago.format(createdAt, locale: 'zh_TW'),
+                        formatTweetTime(context, createdAt),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
@@ -138,6 +141,13 @@ class TweetContent extends StatelessWidget {
                   onMentionTap: onMentionTap,
                   onHashtagTap: onHashtagTap,
                 ),
+                if (isPollCard(contentTweet.card)) ...[
+                  const SizedBox(height: 8),
+                  TweetPoll(
+                    card: contentTweet.card!,
+                    tweetId: contentTweet.idStr,
+                  ),
+                ],
                 if (photoItems.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   TweetMediaGallery(
@@ -147,6 +157,15 @@ class TweetContent extends StatelessWidget {
                         ? TweetMediaLayout.expanded
                         : TweetMediaLayout.compact,
                     statusUrl: statusUrl,
+                    sensitive: contentTweet.possiblySensitive == true,
+                  ),
+                ],
+                for (final videoItem in videoItems) ...[
+                  const SizedBox(height: 8),
+                  TweetVideo(
+                    key: ValueKey('${contentTweet.idStr ?? statusUrl}:${videoItem.videoUrl}'),
+                    item: videoItem,
+                    sensitive: contentTweet.possiblySensitive == true,
                   ),
                 ],
                 if (tweet.isQuoteStatus == true && tweet.quotedStatusWithCard != null) ...[

@@ -97,6 +97,29 @@ class TwitterAccount {
     }
   }
 
+  static Future<http.Response> postMultipart(
+    Uri uri, {
+    Map<String, String>? fields,
+    List<http.MultipartFile>? files,
+  }) async {
+    await initCheckXAccounts();
+
+    if (!hasAccountAvailable()) {
+      throw TwitterAccountException('Login required');
+    }
+
+    try {
+      final authHeader = await TwitterHeaders.getAuthHeader();
+      if (authHeader == null) {
+        throw TwitterAccountException('Login required');
+      }
+      return XRegularAccount.postMultipart(uri, fields: fields, files: files, log: log, authHeader: authHeader);
+    } catch (err) {
+      log.severe('postMultipart - The request ${uri.path} has an error: $err');
+      rethrow;
+    }
+  }
+
   static Future<void> logoutAll() async {
     final database = await Repository.writable();
     await database.delete(tableAccounts);

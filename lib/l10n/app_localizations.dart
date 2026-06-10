@@ -572,6 +572,534 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage'**
   String get tweetManage;
+
+  /// No description provided for @composeTweet.
+  ///
+  /// In en, this message translates to:
+  /// **'Compose'**
+  String get composeTweet;
+
+  /// No description provided for @newTweetHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s happening?'**
+  String get newTweetHint;
+
+  /// No description provided for @addPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos'**
+  String get addPhotos;
+
+  /// No description provided for @newTweet.
+  ///
+  /// In en, this message translates to:
+  /// **'New post'**
+  String get newTweet;
+
+  /// No description provided for @bookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'Bookmarks'**
+  String get bookmarks;
+
+  /// No description provided for @noBookmarks.
+  ///
+  /// In en, this message translates to:
+  /// **'No bookmarks yet'**
+  String get noBookmarks;
+
+  /// No description provided for @bookmarkAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Added to bookmarks'**
+  String get bookmarkAdded;
+
+  /// No description provided for @bookmarkRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed from bookmarks'**
+  String get bookmarkRemoved;
+
+  /// No description provided for @recentSearches.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent searches'**
+  String get recentSearches;
+
+  /// No description provided for @clearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clearAll;
+
+  /// No description provided for @uploadingImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading image {current}/{total}'**
+  String uploadingImages(int current, int total);
+
+  /// No description provided for @settings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settings;
+
+  /// No description provided for @settingsAppearance.
+  ///
+  /// In en, this message translates to:
+  /// **'Appearance'**
+  String get settingsAppearance;
+
+  /// No description provided for @settingsData.
+  ///
+  /// In en, this message translates to:
+  /// **'Data'**
+  String get settingsData;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccount;
+
+  /// No description provided for @themeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme mode'**
+  String get themeMode;
+
+  /// No description provided for @themeSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System'**
+  String get themeSystem;
+
+  /// No description provided for @themeLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Light'**
+  String get themeLight;
+
+  /// No description provided for @themeDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark'**
+  String get themeDark;
+
+  /// No description provided for @dynamicColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Dynamic color'**
+  String get dynamicColor;
+
+  /// No description provided for @dynamicColorHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system wallpaper colors (Material You)'**
+  String get dynamicColorHint;
+
+  /// No description provided for @themeColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme color'**
+  String get themeColor;
+
+  /// No description provided for @clearSearchHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear search history'**
+  String get clearSearchHistory;
+
+  /// No description provided for @searchHistoryCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history cleared'**
+  String get searchHistoryCleared;
+
+  /// No description provided for @confirmLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out of all accounts?'**
+  String get confirmLogout;
+
+  /// No description provided for @muteUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get muteUser;
+
+  /// No description provided for @unmuteUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmute'**
+  String get unmuteUser;
+
+  /// No description provided for @blockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Block'**
+  String get blockUser;
+
+  /// No description provided for @unblockUser.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock'**
+  String get unblockUser;
+
+  /// No description provided for @userMuted.
+  ///
+  /// In en, this message translates to:
+  /// **'Muted'**
+  String get userMuted;
+
+  /// No description provided for @userUnmuted.
+  ///
+  /// In en, this message translates to:
+  /// **'Unmuted'**
+  String get userUnmuted;
+
+  /// No description provided for @userBlocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked'**
+  String get userBlocked;
+
+  /// No description provided for @userUnblocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblocked'**
+  String get userUnblocked;
+
+  /// No description provided for @confirmBlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Block @{screenName}? They will not be able to follow you or view your posts.'**
+  String confirmBlock(String screenName);
+
+  /// No description provided for @notifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get notifications;
+
+  /// No description provided for @noNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet'**
+  String get noNotifications;
+
+  /// No description provided for @pollVotes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} votes'**
+  String pollVotes(int count);
+
+  /// No description provided for @pollEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Final results'**
+  String get pollEnded;
+
+  /// No description provided for @settingsGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsGeneral;
+
+  /// No description provided for @settingsAppearanceSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme mode, colors, font'**
+  String get settingsAppearanceSubtitle;
+
+  /// No description provided for @settingsGeneralSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Language, time display, launch behavior'**
+  String get settingsGeneralSubtitle;
+
+  /// No description provided for @settingsNotificationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which notifications to show'**
+  String get settingsNotificationsSubtitle;
+
+  /// No description provided for @settingsPrivacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Privacy'**
+  String get settingsPrivacy;
+
+  /// No description provided for @settingsPrivacySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Muted and blocked users'**
+  String get settingsPrivacySubtitle;
+
+  /// No description provided for @settingsDataSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search history and cache'**
+  String get settingsDataSubtitle;
+
+  /// No description provided for @refreshOnLaunch.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh on launch'**
+  String get refreshOnLaunch;
+
+  /// No description provided for @refreshOnLaunchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Load fresh content when the app starts; otherwise show cached content first'**
+  String get refreshOnLaunchHint;
+
+  /// No description provided for @notifLikes.
+  ///
+  /// In en, this message translates to:
+  /// **'Likes'**
+  String get notifLikes;
+
+  /// No description provided for @notifRetweets.
+  ///
+  /// In en, this message translates to:
+  /// **'Retweets'**
+  String get notifRetweets;
+
+  /// No description provided for @notifFollows.
+  ///
+  /// In en, this message translates to:
+  /// **'New followers'**
+  String get notifFollows;
+
+  /// No description provided for @notifMentions.
+  ///
+  /// In en, this message translates to:
+  /// **'Mentions & replies'**
+  String get notifMentions;
+
+  /// No description provided for @notifOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get notifOther;
+
+  /// No description provided for @mutedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Muted users'**
+  String get mutedUsers;
+
+  /// No description provided for @blockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Blocked users'**
+  String get blockedUsers;
+
+  /// No description provided for @noMutedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No muted users'**
+  String get noMutedUsers;
+
+  /// No description provided for @noBlockedUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'No blocked users'**
+  String get noBlockedUsers;
+
+  /// No description provided for @clearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cache'**
+  String get clearCache;
+
+  /// No description provided for @clearCacheHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears locally cached timelines, notifications and profiles'**
+  String get clearCacheHint;
+
+  /// No description provided for @cacheCleared.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache cleared'**
+  String get cacheCleared;
+
+  /// No description provided for @settingsMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Media'**
+  String get settingsMedia;
+
+  /// No description provided for @settingsMediaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image quality, data saver, sensitive content'**
+  String get settingsMediaSubtitle;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @languageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow system'**
+  String get languageSystem;
+
+  /// No description provided for @absoluteTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Absolute timestamps'**
+  String get absoluteTime;
+
+  /// No description provided for @absoluteTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Show exact date/time instead of \"3 hours ago\"'**
+  String get absoluteTimeHint;
+
+  /// No description provided for @mediaQualityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline image quality'**
+  String get mediaQualityTitle;
+
+  /// No description provided for @mediaQualitySmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get mediaQualitySmall;
+
+  /// No description provided for @mediaQualityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get mediaQualityMedium;
+
+  /// No description provided for @mediaQualityLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get mediaQualityLarge;
+
+  /// No description provided for @dataSaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Data saver'**
+  String get dataSaver;
+
+  /// No description provided for @dataSaverHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline images load only when tapped'**
+  String get dataSaverHint;
+
+  /// No description provided for @blurSensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide sensitive content'**
+  String get blurSensitive;
+
+  /// No description provided for @blurSensitiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Media marked as sensitive requires a tap to show'**
+  String get blurSensitiveHint;
+
+  /// No description provided for @tapToLoadImages.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to load images'**
+  String get tapToLoadImages;
+
+  /// No description provided for @sensitiveMediaGate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensitive content, tap to view'**
+  String get sensitiveMediaGate;
+
+  /// No description provided for @hideRetweets.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide retweets'**
+  String get hideRetweets;
+
+  /// No description provided for @hideRetweetsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t show retweets in the home timeline'**
+  String get hideRetweetsHint;
+
+  /// No description provided for @saveSearchHistorySetting.
+  ///
+  /// In en, this message translates to:
+  /// **'Save search history'**
+  String get saveSearchHistorySetting;
+
+  /// No description provided for @markMediaSensitive.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark media as sensitive when posting'**
+  String get markMediaSensitive;
+
+  /// No description provided for @markMediaSensitiveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded images carry the sensitive content flag by default'**
+  String get markMediaSensitiveHint;
+
+  /// No description provided for @customFont.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom font'**
+  String get customFont;
+
+  /// No description provided for @customFontDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default font (tap to choose a local .ttf / .otf file)'**
+  String get customFontDefault;
+
+  /// No description provided for @restoreDefaultFont.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore default font'**
+  String get restoreDefaultFont;
+
+  /// No description provided for @saveVideo.
+  ///
+  /// In en, this message translates to:
+  /// **'Save video'**
+  String get saveVideo;
+
+  /// No description provided for @videoSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String videoSaved(String path);
+
+  /// No description provided for @playbackSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback speed'**
+  String get playbackSpeed;
+
+  /// No description provided for @portraitMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Portrait'**
+  String get portraitMode;
+
+  /// No description provided for @landscapeMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Landscape'**
+  String get landscapeMode;
 }
 
 class _AppLocalizationsDelegate

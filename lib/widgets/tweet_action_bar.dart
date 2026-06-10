@@ -14,13 +14,11 @@ import 'package:intl/intl.dart';
 class TweetActionBar extends StatefulWidget {
   final TweetWithCard tweet;
   final GlobalKey captureKey;
-  final VoidCallback? onReplied;
 
   const TweetActionBar({
     super.key,
     required this.tweet,
     required this.captureKey,
-    this.onReplied,
   });
 
   @override
@@ -36,9 +34,11 @@ class _TweetActionBarState extends State<TweetActionBar> {
 
   late bool _favorited;
   late bool _retweeted;
+  late bool _bookmarked;
   late int _favoriteCount;
   late int _retweetTotal;
   late int _replyCount;
+  late int _bookmarkCount;
   bool _busy = false;
 
   TweetWithCard get _source => displayTweet(widget.tweet);
@@ -61,9 +61,11 @@ class _TweetActionBarState extends State<TweetActionBar> {
     final source = displayTweet(tweet);
     _favorited = source.favorited ?? false;
     _retweeted = source.retweeted ?? false;
+    _bookmarked = source.bookmarked ?? false;
     _favoriteCount = source.favoriteCount ?? 0;
     _retweetTotal = (source.retweetCount ?? 0) + (source.quoteCount ?? 0);
     _replyCount = source.replyCount ?? 0;
+    _bookmarkCount = source.bookmarkCount ?? 0;
   }
 
   String? get _actionTweetId => _source.idStr;
@@ -186,6 +188,50 @@ class _TweetActionBarState extends State<TweetActionBar> {
     }
   }
 
+  Future<void> _toggleBookmark() async {
+    final id = _actionTweetId;
+    if (id == null || id.isEmpty || _busy) {
+      return;
+    }
+
+    final wasBookmarked = _bookmarked;
+    setState(() {
+      _busy = true;
+      _bookmarked = !wasBookmarked;
+      _bookmarkCount += wasBookmarked ? -1 : 1;
+    });
+
+    try {
+      if (wasBookmarked) {
+        await Twitter.unbookmarkTweet(id);
+      } else {
+        await Twitter.bookmarkTweet(id);
+      }
+      // Keep the model in sync so the state survives list rebuilds.
+      _source.bookmarked = !wasBookmarked;
+      _source.bookmarkCount = _bookmarkCount;
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        await showMediaActionSnackBar(
+          context,
+          wasBookmarked ? l10n.bookmarkRemoved : l10n.bookmarkAdded,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _bookmarked = wasBookmarked;
+          _bookmarkCount += wasBookmarked ? 1 : -1;
+        });
+      }
+      await _showError(e);
+    } finally {
+      if (mounted) {
+        setState(() => _busy = false);
+      }
+    }
+  }
+
   Future<void> _onReplyTap() async {
     if (_busy) {
       return;
@@ -205,7 +251,6 @@ class _TweetActionBarState extends State<TweetActionBar> {
       );
       if (posted && mounted) {
         setState(() => _replyCount += 1);
-        widget.onReplied?.call();
         final l10n = AppLocalizations.of(context);
         await showMediaActionSnackBar(context, l10n.tweetPosted);
       }
@@ -259,9 +304,10 @@ class _TweetActionBarState extends State<TweetActionBar> {
           ),
           Expanded(
             child: _ActionItem(
-              icon: Icons.bookmark_border,
+              icon: _bookmarked ? Icons.bookmark : Icons.bookmark_border,
               color: _bookmarkColor,
-              label: numberFormat.format(widget.tweet.bookmarkCount ?? 0),
+              label: numberFormat.format(_bookmarkCount),
+              onTap: _busy ? null : _toggleBookmark,
             ),
           ),
           Expanded(

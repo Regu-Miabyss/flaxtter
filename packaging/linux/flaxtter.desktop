@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Flaxtter
+Comment=A Twitter/X client for Linux
+Exec=flaxtter %U
+Icon=flaxtter
+Terminal=false
+Categories=Network;Chat;
+StartupWMClass=flaxtter

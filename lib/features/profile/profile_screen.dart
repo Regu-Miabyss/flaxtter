@@ -1,6 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flaxtter/client/accounts.dart';
 import 'package:flaxtter/client/client.dart';
+import 'package:flaxtter/client/client_account.dart';
+import 'package:flaxtter/features/bookmarks/bookmarks_screen.dart';
 import 'package:flaxtter/features/profile/profile_follows_screen.dart';
+import 'package:flaxtter/features/settings/settings_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/models/profile.dart';
 import 'package:flaxtter/widgets/avatar_viewer.dart';
@@ -13,7 +19,14 @@ import 'package:flaxtter/widgets/tweet_tile.dart';
 import 'package:flaxtter/utils/app_fonts.dart';
 import 'package:flaxtter/utils/profile_bio_text.dart';
 import 'package:flaxtter/widgets/linkable_rich_text.dart';
+import 'package:flaxtter/utils/media_actions.dart';
+import 'package:flaxtter/utils/notifiers.dart';
+import 'package:flaxtter/utils/profile_cache.dart';
+import 'package:flaxtter/utils/scroll_to_top_refresh_controller.dart';
+import 'package:flaxtter/utils/tweet_manage.dart';
 import 'package:flaxtter/widgets/scroll_to_top_fab.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum ProfileTab { tweets, replies, media }
@@ -38,11 +51,16 @@ class ProfileBody extends StatefulWidget {
   final void Function(String screenName)? onMentionTap;
   final void Function(String hashtag)? onHashtagTap;
 
+  /// When provided (own profile in the home tabs), scroll-to-top/refresh is
+  /// driven by the bottom navigation icon instead of the local FAB.
+  final ScrollToTopRefreshController? scrollActionController;
+
   const ProfileBody({
     super.key,
     required this.screenName,
     this.onMentionTap,
     this.onHashtagTap,
+    this.scrollActionController,
   });
 
   @override
@@ -55,29 +73,112 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
   bool _loadingProfile = true;
   late TabController _tabController;
   final ScrollController _scrollController = ScrollController();
+  final GlobalKey<NestedScrollViewState> _nestedScrollViewKey = GlobalKey<NestedScrollViewState>();
+
+  /// Local scroll action state, used for the FAB when no external controller
+  /// (i.e. viewing someone else's profile) is provided.
+  ScrollToTopRefreshController? _localScrollAction;
+
   final Map<ProfileTab, CursorPagingState<int, TweetWithCard, String>> _pagingStates = {
     for (final tab in ProfileTab.values) tab: CursorPagingState(),
   };
+
+  ScrollToTopRefreshController get _scrollAction =>
+      widget.scrollActionController ?? (_localScrollAction ??= ScrollToTopRefreshController());
+
+  bool get _usesNavScrollAction => widget.scrollActionController != null;
+
+  String? _ownScreenName;
+  late final TweetActionNotifier _tweetActions;
+
+  bool get _isOwnProfile =>
+      _ownScreenName != null && _ownScreenName!.toLowerCase() == widget.screenName.toLowerCase();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: ProfileTab.values.length, vsync: this);
     _tabController.addListener(_handleTabChange);
+    _tweetActions = context.read<TweetActionNotifier>();
+    _tweetActions.addListener(_onTweetAction);
+    _loadOwnScreenName();
     _loadProfile();
   }
 
   @override
   void dispose() {
+    _tweetActions.removeListener(_onTweetAction);
+    widget.scrollActionController?.detach();
+    _localScrollAction?.dispose();
     _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadOwnScreenName() async {
+    final accounts = await getAccounts();
+    if (mounted && accounts.isNotEmpty) {
+      setState(() => _ownScreenName = accounts.first.screenName);
+    }
+  }
+
+  void _onTweetAction() {
+    final event = _tweetActions.event;
+    if (event == null || !mounted) {
+      return;
+    }
+    switch (event.kind) {
+      case TweetActionKind.deleted:
+        final id = event.tweetId;
+        if (id == null) {
+          return;
+        }
+        var changed = false;
+        for (final tab in ProfileTab.values) {
+          final state = _pagingStates[tab]!;
+          final newPages = pagesWithoutTweet(state.pages, id);
+          if (newPages != null) {
+            _pagingStates[tab] = state.copyWithEx(pages: newPages);
+            changed = true;
+          }
+        }
+        if (changed) {
+          setState(() {});
+        }
+      case TweetActionKind.replied:
+        if (_isOwnProfile) {
+          _invalidateTabs(const [ProfileTab.replies]);
+        }
+      case TweetActionKind.posted:
+        if (_isOwnProfile) {
+          _invalidateTabs(ProfileTab.values);
+        }
+    }
+  }
+
+  /// Clears the given tabs so they refetch; refetches immediately when one of
+  /// them is currently visible.
+  void _invalidateTabs(List<ProfileTab> tabs) {
+    if (_profile == null) {
+      return;
+    }
+    setState(() {
+      for (final tab in tabs) {
+        _pagingStates[tab] = CursorPagingState();
+      }
+    });
+    if (tabs.contains(_currentTab)) {
+      _fetchNextPage(_currentTab);
+    }
+  }
+
   @override
   void didUpdateWidget(covariant ProfileBody oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.scrollActionController != widget.scrollActionController) {
+      oldWidget.scrollActionController?.detach();
+    }
     if (oldWidget.screenName != widget.screenName) {
       _profile = null;
       _profileError = null;
@@ -85,6 +186,20 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
       _resetPagingStates();
       _loadProfile();
     }
+  }
+
+  /// Attaches both the outer (header) and inner (tab lists) controllers of
+  /// the [NestedScrollView] so scroll offsets combine and scroll-to-top
+  /// resets the full view. Must run after the NestedScrollView is built.
+  void _attachScrollAction() {
+    final nestedState = _nestedScrollViewKey.currentState;
+    if (nestedState == null) {
+      return;
+    }
+    _scrollAction.attach(
+      [_scrollController, nestedState.innerController],
+      onRefresh: () => _refreshTab(_currentTab),
+    );
   }
 
   void _resetPagingStates() {
@@ -113,6 +228,10 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
     }
   }
 
+  bool _muting = false;
+  bool _blocking = false;
+  bool _userActionBusy = false;
+
   Future<void> _loadProfile() async {
     if (!mounted) {
       return;
@@ -122,24 +241,49 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
       _profileError = null;
       _resetPagingStates();
     });
+
+    // Show a cached profile immediately; the network result replaces it below.
+    final cachedProfile = await getCachedProfile(widget.screenName);
+    if (mounted && cachedProfile != null && _profile == null) {
+      setState(() {
+        _profile = cachedProfile;
+        _muting = cachedProfile.user.muting ?? false;
+        _blocking = cachedProfile.user.blocking ?? false;
+        _loadingProfile = false;
+      });
+      unawaited(_fetchNextPage(_currentTab));
+    }
+
     try {
       final profile = await Twitter.getProfileByScreenName(widget.screenName);
       if (!mounted) {
         return;
       }
+      await cacheProfile(widget.screenName, profile);
+      if (!mounted) {
+        return;
+      }
+      final hadProfile = _profile != null;
       setState(() {
         _profile = profile;
+        _muting = profile.user.muting ?? false;
+        _blocking = profile.user.blocking ?? false;
         _loadingProfile = false;
       });
-      await _fetchNextPage(_currentTab);
+      if (!hadProfile) {
+        await _fetchNextPage(_currentTab);
+      }
     } catch (e) {
       if (!mounted) {
         return;
       }
-      setState(() {
-        _profileError = e;
-        _loadingProfile = false;
-      });
+      // Keep showing the cached profile when the refresh fails.
+      if (_profile == null) {
+        setState(() {
+          _profileError = e;
+          _loadingProfile = false;
+        });
+      }
     }
   }
 
@@ -239,6 +383,211 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
     );
   }
 
+  Future<void> _showUserActionError(Object e) async {
+    if (!mounted) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final message = e is TwitterAccountException
+        ? l10n.loginRequired
+        : e is http.Response
+            ? l10n.actionFailed('HTTP ${e.statusCode}')
+            : l10n.actionFailed(e.toString());
+    await showMediaActionSnackBar(context, message);
+  }
+
+  Future<void> _toggleMute() async {
+    final user = _profile?.user;
+    if (user == null || _userActionBusy) {
+      return;
+    }
+    final wasMuting = _muting;
+    setState(() {
+      _userActionBusy = true;
+      _muting = !wasMuting;
+    });
+    try {
+      if (wasMuting) {
+        await Twitter.unmuteUser(userId: user.idStr, screenName: user.screenName);
+      } else {
+        await Twitter.muteUser(userId: user.idStr, screenName: user.screenName);
+      }
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        await showMediaActionSnackBar(context, wasMuting ? l10n.userUnmuted : l10n.userMuted);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _muting = wasMuting);
+      }
+      await _showUserActionError(e);
+    } finally {
+      if (mounted) {
+        setState(() => _userActionBusy = false);
+      }
+    }
+  }
+
+  Future<void> _toggleBlock() async {
+    final user = _profile?.user;
+    if (user == null || _userActionBusy) {
+      return;
+    }
+    final l10n = AppLocalizations.of(context);
+    final wasBlocking = _blocking;
+
+    if (!wasBlocking) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text(l10n.confirmBlock(widget.screenName)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+              ),
+              child: Text(l10n.blockUser),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+    }
+
+    setState(() {
+      _userActionBusy = true;
+      _blocking = !wasBlocking;
+    });
+    try {
+      if (wasBlocking) {
+        await Twitter.unblockUser(userId: user.idStr, screenName: user.screenName);
+      } else {
+        await Twitter.blockUser(userId: user.idStr, screenName: user.screenName);
+      }
+      if (mounted) {
+        await showMediaActionSnackBar(
+          context,
+          wasBlocking ? l10n.userUnblocked : l10n.userBlocked,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _blocking = wasBlocking);
+      }
+      await _showUserActionError(e);
+    } finally {
+      if (mounted) {
+        setState(() => _userActionBusy = false);
+      }
+    }
+  }
+
+  Future<void> _showMoreMenu() async {
+    final l10n = AppLocalizations.of(context);
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(_muting ? Icons.volume_up_outlined : Icons.volume_off_outlined),
+              title: Text(_muting ? l10n.unmuteUser : l10n.muteUser),
+              onTap: () => Navigator.pop(context, 'mute'),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.block,
+                color: _blocking ? null : Theme.of(context).colorScheme.error,
+              ),
+              title: Text(
+                _blocking ? l10n.unblockUser : l10n.blockUser,
+                style: _blocking
+                    ? null
+                    : TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onTap: () => Navigator.pop(context, 'block'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) {
+      return;
+    }
+    if (action == 'mute') {
+      await _toggleMute();
+    } else if (action == 'block') {
+      await _toggleBlock();
+    }
+  }
+
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+    );
+  }
+
+  Widget _buildHeaderTrailing() {
+    if (_isOwnProfile) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton.filledTonal(
+            tooltip: AppLocalizations.of(context).bookmarks,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(40, 40),
+              maximumSize: const Size(40, 40),
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+            ),
+            icon: const Icon(Icons.bookmark_border, size: 22),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: AppLocalizations.of(context).settings,
+            style: IconButton.styleFrom(
+              minimumSize: const Size(40, 40),
+              maximumSize: const Size(40, 40),
+              padding: EdgeInsets.zero,
+            ),
+            onPressed: _openSettings,
+            icon: const Icon(Icons.settings_outlined, size: 22),
+          ),
+        ],
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton.filledTonal(
+          tooltip: AppLocalizations.of(context).tweetManage,
+          style: IconButton.styleFrom(
+            minimumSize: const Size(40, 40),
+            maximumSize: const Size(40, 40),
+            padding: EdgeInsets.zero,
+          ),
+          onPressed: _userActionBusy ? null : _showMoreMenu,
+          icon: const Icon(Icons.more_horiz, size: 22),
+        ),
+        const SizedBox(width: 8),
+        ProfileFollowButton(user: _profile!.user),
+      ],
+    );
+  }
+
   void _openFollowing() {
     Navigator.push(
       context,
@@ -312,10 +661,17 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
       onHashtagTap: widget.onHashtagTap,
     );
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _attachScrollAction();
+      }
+    });
+
     return Stack(
       fit: StackFit.expand,
       children: [
         NestedScrollView(
+            key: _nestedScrollViewKey,
             controller: _scrollController,
             physics: pullToRefreshScrollPhysics,
             headerSliverBuilder: (context, _) => [
@@ -325,6 +681,7 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
                   child: _ProfileExpandedHeader(
                     profile: profile,
                     actions: headerActions,
+                    trailing: _buildHeaderTrailing(),
                   ),
                 ),
               ),
@@ -348,12 +705,12 @@ class _ProfileBodyState extends State<ProfileBody> with SingleTickerProviderStat
               ],
             ),
         ),
-        ScrollToTopRefreshFab(
-          scrollController: _scrollController,
-          onRefresh: () => _refreshTab(_currentTab),
-          scrollToTopTooltip: l10n.scrollToTop,
-          refreshTooltip: l10n.refresh,
-        ),
+        if (!_usesNavScrollAction)
+          ScrollToTopRefreshFab(
+            controller: _scrollAction,
+            scrollToTopTooltip: l10n.scrollToTop,
+            refreshTooltip: l10n.refresh,
+          ),
       ],
     );
   }
@@ -511,10 +868,12 @@ class _ProfileExpandedHeader extends StatelessWidget {
 
   final Profile profile;
   final _ProfileHeaderActions actions;
+  final Widget trailing;
 
   const _ProfileExpandedHeader({
     required this.profile,
     required this.actions,
+    required this.trailing,
   });
 
   @override
@@ -569,7 +928,7 @@ class _ProfileExpandedHeader extends StatelessWidget {
                     ),
                   ),
                   const Spacer(),
-                  ProfileFollowButton(user: user),
+                  trailing,
                 ],
               ),
             ),

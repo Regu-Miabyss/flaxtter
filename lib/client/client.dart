@@ -475,6 +475,12 @@ class Twitter {
     'jm93VcEnLxM7My_CL9C_EA',
   ];
   static const _gqlDeleteTweetQueryId = 'VaenaVgh5q5ih7kvyVjgtg';
+  static const _gqlCreateBookmarkQueryId = 'aoDbu3RHznuiSkQ9aNM67Q';
+  static const _gqlDeleteBookmarkQueryId = 'Wlmlj2-xzyS1GN3a6cj-mQ';
+  static const _gqlBookmarksQueryIds = [
+    'qToeLeMs43Q8cr7tRYXmaQ',
+    'xLjCVTqYWz8CGSprLU349w',
+  ];
 
   static void _ensureAuthenticated() {
     if (!TwitterAccount.hasAccountAvailable()) {
@@ -549,19 +555,103 @@ class Twitter {
     return null;
   }
 
-  /// Post a tweet, optionally as a reply or quote.
+  static const _maxImageUploadBytes = 5 * 1024 * 1024;
+  static const _maxGifUploadBytes = 15 * 1024 * 1024;
+  static const _uploadChunkBytes = 4 * 1024 * 1024;
+  static const _uploadMediaUrl = 'https://upload.twitter.com/i/media/upload.json';
+
+  static void _checkUploadResponse(http.Response response, String step) {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Media upload $step failed: HTTP ${response.statusCode} ${response.body}');
+    }
+  }
+
+  /// Upload an image for attaching to a tweet (INIT -> APPEND -> FINALIZE).
+  /// Returns the media ID string.
+  static Future<String> uploadMedia({
+    required Uint8List bytes,
+    required String mediaType,
+  }) async {
+    final isGif = mediaType == 'image/gif';
+    final maxBytes = isGif ? _maxGifUploadBytes : _maxImageUploadBytes;
+    if (bytes.length > maxBytes) {
+      throw Exception('Image too large (max ${maxBytes ~/ (1024 * 1024)} MB)');
+    }
+
+    final uploadUri = Uri.parse(_uploadMediaUrl);
+
+    final initResponse = await TwitterAccount.post(
+      uploadUri,
+      body: {
+        'command': 'INIT',
+        'total_bytes': bytes.length.toString(),
+        'media_type': mediaType,
+        'media_category': isGif ? 'tweet_gif' : 'tweet_image',
+      },
+    );
+    _checkUploadResponse(initResponse, 'INIT');
+    final initJson = jsonDecode(initResponse.body) as Map<String, dynamic>;
+    final mediaId = initJson['media_id_string'] as String?;
+    if (mediaId == null || mediaId.isEmpty) {
+      throw Exception('Media upload INIT failed: no media_id in response');
+    }
+
+    var segmentIndex = 0;
+    for (var offset = 0; offset < bytes.length; offset += _uploadChunkBytes) {
+      final end = m.min(offset + _uploadChunkBytes, bytes.length);
+      final appendResponse = await TwitterAccount.postMultipart(
+        uploadUri,
+        fields: {
+          'command': 'APPEND',
+          'media_id': mediaId,
+          'segment_index': segmentIndex.toString(),
+        },
+        files: [
+          http.MultipartFile.fromBytes('media', Uint8List.sublistView(bytes, offset, end)),
+        ],
+      );
+      _checkUploadResponse(appendResponse, 'APPEND');
+      segmentIndex++;
+    }
+
+    final finalizeResponse = await TwitterAccount.post(
+      uploadUri,
+      body: {
+        'command': 'FINALIZE',
+        'media_id': mediaId,
+      },
+    );
+    _checkUploadResponse(finalizeResponse, 'FINALIZE');
+    final finalizeJson = jsonDecode(finalizeResponse.body) as Map<String, dynamic>;
+    final finalizedId = finalizeJson['media_id_string'] as String?;
+    if (finalizedId == null || finalizedId.isEmpty) {
+      throw Exception('Media upload FINALIZE failed: no media_id in response');
+    }
+    return finalizedId;
+  }
+
+  /// Post a tweet, optionally as a reply, quote, or with media attachments.
   static Future<String> createTweet({
     required String text,
     String? replyToTweetId,
     String? quoteTweetId,
+    List<String>? mediaIds,
+    bool possiblySensitive = false,
   }) async {
+    final mediaEntities = <Map<String, dynamic>>[];
+    if (mediaIds != null) {
+      for (final id in mediaIds) {
+        mediaEntities.add({'media_id': id, 'tagged_users': <dynamic>[]});
+      }
+    }
+
     final variables = <String, dynamic>{
       'tweet_text': text,
       'dark_request': false,
       'semantic_annotation_ids': <dynamic>[],
       'media': {
-        'media_entities': <dynamic>[],
-        'possibly_sensitive': false,
+        'media_entities': mediaEntities,
+        'possibly_sensitive': possiblySensitive && mediaEntities.isNotEmpty,
       },
     };
     if (replyToTweetId != null) {
@@ -601,6 +691,280 @@ class Twitter {
       operationName: 'UnfavoriteTweet',
       variables: {'tweet_id': tweetId},
     );
+  }
+
+  static Future<void> _postUserActionV1(String path, {String? userId, String? screenName}) async {
+    _ensureAuthenticated();
+    final body = <String, String>{};
+    if (userId != null && userId.isNotEmpty) {
+      body['user_id'] = userId;
+    } else if (screenName != null && screenName.isNotEmpty) {
+      body['screen_name'] = screenName;
+    } else {
+      throw Exception('Missing user identifier');
+    }
+    final response = await TwitterAccount.post(Uri.https('x.com', path), body: body);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+  }
+
+  static Future<void> muteUser({String? userId, String? screenName}) =>
+      _postUserActionV1('/i/api/1.1/mutes/users/create.json', userId: userId, screenName: screenName);
+
+  static Future<void> unmuteUser({String? userId, String? screenName}) =>
+      _postUserActionV1('/i/api/1.1/mutes/users/destroy.json', userId: userId, screenName: screenName);
+
+  static Future<void> blockUser({String? userId, String? screenName}) =>
+      _postUserActionV1('/i/api/1.1/blocks/create.json', userId: userId, screenName: screenName);
+
+  static Future<void> unblockUser({String? userId, String? screenName}) =>
+      _postUserActionV1('/i/api/1.1/blocks/destroy.json', userId: userId, screenName: screenName);
+
+  /// Paged list of muted or blocked users (v1.1 list endpoints).
+  static Future<UserListPage> _getUserListV1(String path, {String cursor = '-1'}) async {
+    _ensureAuthenticated();
+    final uri = Uri.https('x.com', path, {
+      'count': '100',
+      'cursor': cursor,
+      'skip_status': 'true',
+      'include_entities': 'false',
+    });
+    final response = await TwitterAccount.fetch(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    final users = (result['users'] as List<dynamic>? ?? [])
+        .map((e) => UserWithExtra.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final nextCursor = result['next_cursor_str'] as String?;
+    return UserListPage(
+      users: users,
+      nextCursor: nextCursor == null || nextCursor == '0' ? null : nextCursor,
+    );
+  }
+
+  static Future<UserListPage> getMutedUsers({String cursor = '-1'}) =>
+      _getUserListV1('/i/api/1.1/mutes/users/list.json', cursor: cursor);
+
+  static Future<UserListPage> getBlockedUsers({String cursor = '-1'}) =>
+      _getUserListV1('/i/api/1.1/blocks/list.json', cursor: cursor);
+
+  /// Vote in a poll. Returns the updated card (binding_values normalized to a map).
+  static Future<Map<String, dynamic>?> votePoll({
+    required String cardUri,
+    required String tweetId,
+    required String cardName,
+    required int selectedChoice,
+  }) async {
+    _ensureAuthenticated();
+    final response = await TwitterAccount.post(
+      Uri.https('caps.x.com', '/v2/capi/passthrough/1'),
+      body: {
+        'twitter:string:card_uri': cardUri,
+        'twitter:long:original_tweet_id': tweetId,
+        'twitter:string:response_card_name': cardName,
+        'twitter:string:cards_platform': 'Web-12',
+        'twitter:string:selected_choice': '$selectedChoice',
+      },
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    final card = result['card'] as Map<String, dynamic>?;
+    if (card != null && card['binding_values'] is List) {
+      final bindingValuesList = card['binding_values'] as List;
+      card['binding_values'] = bindingValuesList.fold<Map<String, dynamic>>({}, (prev, elm) {
+        prev[elm['key']] = elm['value'];
+        return prev;
+      });
+    }
+    return card;
+  }
+
+  /// Notifications timeline (likes, retweets, follows, mentions...).
+  static Future<NotificationsResult> getNotifications({int count = 40, String? cursor}) async {
+    _ensureAuthenticated();
+    final uri = Uri.https('x.com', '/i/api/2/notifications/all.json', {
+      'count': '$count',
+      'include_entities': '1',
+      'include_user_entities': '1',
+      'include_cards': '1',
+      'include_ext_alt_text': 'true',
+      'tweet_mode': 'extended',
+      'send_error_codes': 'true',
+      'simple_quoted_tweet': 'true',
+      if (cursor != null) 'cursor': cursor,
+    });
+    final response = await TwitterAccount.fetch(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    return parseNotificationsResponse(result);
+  }
+
+  /// Parses a /2/notifications/all.json response (also used to restore cached pages).
+  static NotificationsResult parseNotificationsResponse(Map<String, dynamic> result) {
+    final global = (result['globalObjects'] as Map<String, dynamic>?) ?? {};
+    final tweets = (global['tweets'] as Map<String, dynamic>?) ?? {};
+    final users = (global['users'] as Map<String, dynamic>?) ?? {};
+    final notifications = (global['notifications'] as Map<String, dynamic>?) ?? {};
+
+    final entries = <NotificationEntry>[];
+    String? cursorTop;
+    String? cursorBottom;
+
+    final instructions = (result['timeline']?['instructions'] as List<dynamic>?) ?? [];
+    for (final instruction in instructions) {
+      final addEntries = instruction['addEntries']?['entries'] as List<dynamic>?;
+      if (addEntries == null) {
+        continue;
+      }
+      for (final entry in addEntries) {
+        final entryId = entry['entryId'] as String? ?? '';
+        final content = entry['content'] as Map<String, dynamic>?;
+        if (content == null) {
+          continue;
+        }
+
+        if (entryId.startsWith('cursor-top')) {
+          cursorTop = content['operation']?['cursor']?['value'] as String?;
+          continue;
+        }
+        if (entryId.startsWith('cursor-bottom')) {
+          cursorBottom = content['operation']?['cursor']?['value'] as String?;
+          continue;
+        }
+
+        final itemContent = content['item']?['content'] as Map<String, dynamic>?;
+        if (itemContent == null) {
+          continue;
+        }
+
+        // Mentions/replies arrive as plain tweet entries.
+        final tweetId = itemContent['tweet']?['id'] as String?;
+        if (tweetId != null && tweets[tweetId] != null) {
+          entries.add(NotificationEntry(
+            tweet: TweetWithCard.fromCardJson(tweets, users, tweets[tweetId]),
+          ));
+          continue;
+        }
+
+        // Aggregated notifications (likes, retweets, follows...).
+        final notificationId = itemContent['notification']?['id'] as String?;
+        final notificationJson = notificationId == null
+            ? null
+            : notifications[notificationId] as Map<String, dynamic>?;
+        if (notificationJson == null) {
+          continue;
+        }
+
+        final fromUsers = <UserWithExtra>[];
+        final template = notificationJson['template']?['aggregateUserActionsV1'] as Map<String, dynamic>?;
+        for (final fromUser in (template?['fromUsers'] as List<dynamic>? ?? [])) {
+          final userId = fromUser['user']?['id'] as String?;
+          final userJson = userId == null ? null : users[userId] as Map<String, dynamic>?;
+          if (userJson != null) {
+            fromUsers.add(UserWithExtra.fromJson(userJson));
+          }
+        }
+
+        TweetWithCard? targetTweet;
+        for (final target in (template?['targetObjects'] as List<dynamic>? ?? [])) {
+          final targetTweetId = target['tweet']?['id'] as String?;
+          if (targetTweetId != null && tweets[targetTweetId] != null) {
+            targetTweet = TweetWithCard.fromCardJson(tweets, users, tweets[targetTweetId]);
+            break;
+          }
+        }
+
+        final timestampMs = int.tryParse(notificationJson['timestampMs'] as String? ?? '');
+        entries.add(NotificationEntry(
+          notification: TwitterNotification(
+            id: notificationJson['id'] as String? ?? entryId,
+            iconId: notificationJson['icon']?['id'] as String? ?? '',
+            text: notificationJson['message']?['text'] as String? ?? '',
+            timestamp: timestampMs == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(timestampMs),
+            users: fromUsers,
+            targetTweet: targetTweet,
+          ),
+        ));
+      }
+    }
+
+    return NotificationsResult(
+      entries: entries,
+      cursorTop: cursorTop,
+      cursorBottom: cursorBottom,
+      raw: result,
+    );
+  }
+
+  static Future<void> bookmarkTweet(String tweetId) async {
+    await _graphqlMutation(
+      queryId: _gqlCreateBookmarkQueryId,
+      operationName: 'CreateBookmark',
+      variables: {'tweet_id': tweetId},
+    );
+  }
+
+  static Future<void> unbookmarkTweet(String tweetId) async {
+    await _graphqlMutation(
+      queryId: _gqlDeleteBookmarkQueryId,
+      operationName: 'DeleteBookmark',
+      variables: {'tweet_id': tweetId},
+    );
+  }
+
+  /// Bookmarked tweets of the logged-in account.
+  static Future<TweetStatus> getBookmarks({int count = 20, String? cursor}) async {
+    _ensureAuthenticated();
+    final variables = <String, dynamic>{
+      'count': count,
+      'includePromotedContent': false,
+    };
+    if (cursor != null) {
+      variables['cursor'] = cursor;
+    }
+    final features = <String, dynamic>{
+      ...defaultFeatures,
+      'graphql_timeline_v2_bookmark_timeline': true,
+    };
+
+    Object? lastError;
+    for (final queryId in _gqlBookmarksQueryIds) {
+      final uri = Uri.https('x.com', '/i/api/graphql/$queryId/Bookmarks', {
+        'variables': jsonEncode(variables),
+        'features': jsonEncode(features),
+      });
+      try {
+        final response = await _twitterApi.client.get(uri);
+        if (response.body.isEmpty) {
+          return TweetStatus(chains: [], cursorBottom: null, cursorTop: null);
+        }
+        final result = json.decode(response.body) as Map<String, dynamic>;
+        final timeline =
+            result['data']?['bookmark_timeline_v2'] ?? result['data']?['bookmark_timeline'];
+        if (timeline == null) {
+          return TweetStatus(chains: [], cursorBottom: null, cursorTop: null);
+        }
+        final instructions = _graphqlInstructionsFromTimeline(timeline);
+        return _createTweetStatusFromGraphqlInstructions(instructions, const []);
+      } catch (e) {
+        lastError = e;
+        // Rotated/retired query id: try the next candidate.
+        if (e is http.Response && (e.statusCode == 404 || e.statusCode == 400)) {
+          continue;
+        }
+        rethrow;
+      }
+    }
+    throw lastError ?? Exception('Failed to load bookmarks');
   }
 
   static Future<void> retweet(String tweetId) async {
@@ -1677,6 +2041,7 @@ class TweetWithCard extends Tweet {
   bool? isTombstone;
   TweetWithCard? birdwatchQuotedStatus;
   int? bookmarkCount;
+  bool? bookmarked;
 
   TweetWithCard();
 
@@ -1857,6 +2222,7 @@ class TweetWithCard extends Tweet {
     tweet.replyCount = e['reply_count'] as int?;
     tweet.retweetCount = e['retweet_count'] as int?;
     tweet.bookmarkCount = e['bookmark_count'] as int?;
+    tweet.bookmarked = e['bookmarked'] as bool?;
     tweet.retweeted = e['retweeted'] as bool?;
     tweet.source = e['source'] as String?;
     tweet.text = e['text'] ?? e['full_text'] as String?;
@@ -1989,4 +2355,58 @@ class UnknownTimelineItemType implements Exception {
   String toString() {
     return 'Unknown timeline item type: {type: $type, entryId: $entryId}';
   }
+}
+
+class UserListPage {
+  final List<UserWithExtra> users;
+  final String? nextCursor;
+
+  UserListPage({required this.users, required this.nextCursor});
+}
+
+/// An aggregated notification (likes, retweets, follows...) from the
+/// notifications timeline.
+class TwitterNotification {
+  final String id;
+
+  /// Icon identifier from the API, e.g. heart_icon, retweet_icon, person_icon.
+  final String iconId;
+  final String text;
+  final DateTime? timestamp;
+  final List<UserWithExtra> users;
+  final TweetWithCard? targetTweet;
+
+  TwitterNotification({
+    required this.id,
+    required this.iconId,
+    required this.text,
+    required this.timestamp,
+    required this.users,
+    required this.targetTweet,
+  });
+}
+
+/// One entry of the notifications timeline: either an aggregated notification
+/// or a plain tweet (mention/reply).
+class NotificationEntry {
+  final TwitterNotification? notification;
+  final TweetWithCard? tweet;
+
+  NotificationEntry({this.notification, this.tweet});
+}
+
+class NotificationsResult {
+  final List<NotificationEntry> entries;
+  final String? cursorTop;
+  final String? cursorBottom;
+
+  /// Raw decoded response, kept so the first page can be cached locally.
+  final Map<String, dynamic>? raw;
+
+  NotificationsResult({
+    required this.entries,
+    required this.cursorTop,
+    required this.cursorBottom,
+    this.raw,
+  });
 }

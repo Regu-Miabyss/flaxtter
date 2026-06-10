@@ -4,11 +4,13 @@ import 'package:flaxtter/client/client.dart';
 import 'package:flaxtter/client/client_account.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/media_actions.dart';
+import 'package:flaxtter/utils/notifiers.dart';
 import 'package:flaxtter/utils/tweet_share.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
 import 'package:flaxtter/widgets/retweet_actions.dart';
 import 'package:flaxtter/widgets/tweet_compose_sheet.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 Future<bool> isOwnTweet(TweetWithCard tweet) async {
   final accounts = await getAccounts();
@@ -20,11 +22,33 @@ Future<bool> isOwnTweet(TweetWithCard tweet) async {
   return own.isNotEmpty && own == author;
 }
 
+/// Returns [pages] with all occurrences of [tweetId] removed (including
+/// retweets wrapping it), or null when nothing changed.
+List<List<TweetWithCard>>? pagesWithoutTweet(
+  List<List<TweetWithCard>>? pages,
+  String tweetId,
+) {
+  if (pages == null) {
+    return null;
+  }
+  var changed = false;
+  final result = <List<TweetWithCard>>[];
+  for (final page in pages) {
+    final filtered = page
+        .where((tweet) => tweet.idStr != tweetId && displayTweet(tweet).idStr != tweetId)
+        .toList();
+    if (filtered.length != page.length) {
+      changed = true;
+    }
+    result.add(filtered);
+  }
+  return changed ? result : null;
+}
+
 Future<void> showTweetManageSheet(
   BuildContext context, {
   required TweetWithCard tweet,
   required GlobalKey captureKey,
-  VoidCallback? onDeleted,
 }) async {
   final l10n = AppLocalizations.of(context);
   final ownTweet = await isOwnTweet(tweet);
@@ -124,8 +148,8 @@ Future<void> showTweetManageSheet(
         }
         await Twitter.deleteTweet(tweetId);
         if (context.mounted) {
+          context.read<TweetActionNotifier>().tweetDeleted(tweetId);
           await showMediaActionSnackBar(context, l10n.tweetDeleted);
-          onDeleted?.call();
         }
     }
   } catch (e) {

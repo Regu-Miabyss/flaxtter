@@ -1,7 +1,7 @@
 name: flaxtter
 description: A Twitter/X client for Linux and Android.
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.2.1+3
 
 environment:
   sdk: ^3.11.0
@@ -25,6 +25,7 @@ dependencies:
   path_provider: ^2.1.5
   provider: ^6.1.1
   quiver: ^3.2.2
+  shared_preferences: ^2.3.2
   sqflite: ^2.4.0
   sqflite_common_ffi: ^2.3.4
   synchronized: ^3.3.0
@@ -37,9 +38,19 @@ dependencies:
   crypto: ^3.0.7
   desktop_webview_linux:
     path: packages/desktop_webview_linux
+  file_selector: ^1.0.3
   gal: ^2.3.2
+  image_picker: ^1.1.2
   material_symbols_icons: ^4.2928.1
   dynamic_color: ^1.8.1
+  media_kit: ^1.2.6
+  media_kit_video: ^2.0.1
+  media_kit_libs_video: ^1.0.7
+  flutter_media_session:
+    path: packages/flutter_media_session
+  wakelock_plus: ^1.5.2
+  mpris_service:
+    git: https://github.com/alexmercerind/mpris_service
 
 dev_dependencies:
   flutter_test:

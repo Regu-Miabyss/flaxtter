@@ -276,6 +276,278 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tweetManage => '管理';
+
+  @override
+  String get composeTweet => '发推';
+
+  @override
+  String get newTweetHint => '有什么新鲜事？';
+
+  @override
+  String get addPhotos => '添加图片';
+
+  @override
+  String get newTweet => '新建推文';
+
+  @override
+  String get bookmarks => '书签';
+
+  @override
+  String get noBookmarks => '暂无书签';
+
+  @override
+  String get bookmarkAdded => '已加入书签';
+
+  @override
+  String get bookmarkRemoved => '已移除书签';
+
+  @override
+  String get recentSearches => '最近搜索';
+
+  @override
+  String get clearAll => '清除';
+
+  @override
+  String uploadingImages(int current, int total) {
+    return '正在上传图片 $current/$total';
+  }
+
+  @override
+  String get settings => '设置';
+
+  @override
+  String get settingsAppearance => '外观';
+
+  @override
+  String get settingsData => '数据';
+
+  @override
+  String get settingsAccount => '账户';
+
+  @override
+  String get themeMode => '主题模式';
+
+  @override
+  String get themeSystem => '系统';
+
+  @override
+  String get themeLight => '浅色';
+
+  @override
+  String get themeDark => '深色';
+
+  @override
+  String get dynamicColor => '动态取色';
+
+  @override
+  String get dynamicColorHint => '跟随系统壁纸颜色（Material You）';
+
+  @override
+  String get themeColor => '主题颜色';
+
+  @override
+  String get clearSearchHistory => '清除搜索历史';
+
+  @override
+  String get searchHistoryCleared => '搜索历史已清除';
+
+  @override
+  String get confirmLogout => '确定登出所有账号？';
+
+  @override
+  String get muteUser => '静音';
+
+  @override
+  String get unmuteUser => '取消静音';
+
+  @override
+  String get blockUser => '屏蔽';
+
+  @override
+  String get unblockUser => '取消屏蔽';
+
+  @override
+  String get userMuted => '已静音';
+
+  @override
+  String get userUnmuted => '已取消静音';
+
+  @override
+  String get userBlocked => '已屏蔽';
+
+  @override
+  String get userUnblocked => '已取消屏蔽';
+
+  @override
+  String confirmBlock(String screenName) {
+    return '屏蔽 @$screenName？对方将无法关注你或查看你的推文。';
+  }
+
+  @override
+  String get notifications => '通知';
+
+  @override
+  String get noNotifications => '暂无通知';
+
+  @override
+  String pollVotes(int count) {
+    return '$count 票';
+  }
+
+  @override
+  String get pollEnded => '已结束';
+
+  @override
+  String get settingsGeneral => '通用';
+
+  @override
+  String get settingsAppearanceSubtitle => '主题模式、颜色、字体';
+
+  @override
+  String get settingsGeneralSubtitle => '语言、时间显示、启动行为';
+
+  @override
+  String get settingsNotificationsSubtitle => '选择要显示的通知类型';
+
+  @override
+  String get settingsPrivacy => '隐私';
+
+  @override
+  String get settingsPrivacySubtitle => '静音和屏蔽的用户';
+
+  @override
+  String get settingsDataSubtitle => '搜索历史与缓存';
+
+  @override
+  String get refreshOnLaunch => '启动时自动刷新';
+
+  @override
+  String get refreshOnLaunchHint => '打开应用时自动加载最新内容；关闭后先显示上次的缓存';
+
+  @override
+  String get notifLikes => '喜欢';
+
+  @override
+  String get notifRetweets => '转推';
+
+  @override
+  String get notifFollows => '新粉丝';
+
+  @override
+  String get notifMentions => '提及与回复';
+
+  @override
+  String get notifOther => '其他';
+
+  @override
+  String get mutedUsers => '静音列表';
+
+  @override
+  String get blockedUsers => '屏蔽列表';
+
+  @override
+  String get noMutedUsers => '没有静音的用户';
+
+  @override
+  String get noBlockedUsers => '没有屏蔽的用户';
+
+  @override
+  String get clearCache => '清除缓存';
+
+  @override
+  String get clearCacheHint => '清除时间线、通知和个人资料的本地缓存';
+
+  @override
+  String get cacheCleared => '缓存已清除';
+
+  @override
+  String get settingsMedia => '媒体';
+
+  @override
+  String get settingsMediaSubtitle => '图片清晰度、省流模式、敏感内容';
+
+  @override
+  String get language => '界面语言';
+
+  @override
+  String get languageSystem => '跟随系统';
+
+  @override
+  String get absoluteTime => '绝对时间显示';
+
+  @override
+  String get absoluteTimeHint => '用具体日期时间替代「3 小时前」';
+
+  @override
+  String get mediaQualityTitle => '时间线图片清晰度';
+
+  @override
+  String get mediaQualitySmall => '小';
+
+  @override
+  String get mediaQualityMedium => '中';
+
+  @override
+  String get mediaQualityLarge => '大';
+
+  @override
+  String get dataSaver => '省流模式';
+
+  @override
+  String get dataSaverHint => '时间线图片需点按后才加载';
+
+  @override
+  String get blurSensitive => '遮挡敏感内容';
+
+  @override
+  String get blurSensitiveHint => '标记为敏感的媒体需点按后显示';
+
+  @override
+  String get tapToLoadImages => '点按加载图片';
+
+  @override
+  String get sensitiveMediaGate => '敏感内容，点按查看';
+
+  @override
+  String get hideRetweets => '隐藏转推';
+
+  @override
+  String get hideRetweetsHint => '首页时间线不显示转推';
+
+  @override
+  String get saveSearchHistorySetting => '保存搜索历史';
+
+  @override
+  String get markMediaSensitive => '发推时标记媒体为敏感内容';
+
+  @override
+  String get markMediaSensitiveHint => '上传的图片默认带有敏感内容标记';
+
+  @override
+  String get customFont => '自定义字体';
+
+  @override
+  String get customFontDefault => '默认字体（点按选择本地 .ttf / .otf 文件）';
+
+  @override
+  String get restoreDefaultFont => '恢复默认字体';
+
+  @override
+  String get saveVideo => '保存视频';
+
+  @override
+  String videoSaved(String path) {
+    return '已保存至 $path';
+  }
+
+  @override
+  String get playbackSpeed => '播放速度';
+
+  @override
+  String get portraitMode => '竖屏';
+
+  @override
+  String get landscapeMode => '横屏';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -550,4 +822,276 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get tweetManage => '管理';
+
+  @override
+  String get composeTweet => '發推';
+
+  @override
+  String get newTweetHint => '有什麼新鮮事？';
+
+  @override
+  String get addPhotos => '新增圖片';
+
+  @override
+  String get newTweet => '新建推文';
+
+  @override
+  String get bookmarks => '書籤';
+
+  @override
+  String get noBookmarks => '暫無書籤';
+
+  @override
+  String get bookmarkAdded => '已加入書籤';
+
+  @override
+  String get bookmarkRemoved => '已移除書籤';
+
+  @override
+  String get recentSearches => '最近搜尋';
+
+  @override
+  String get clearAll => '清除';
+
+  @override
+  String uploadingImages(int current, int total) {
+    return '正在上傳圖片 $current/$total';
+  }
+
+  @override
+  String get settings => '設定';
+
+  @override
+  String get settingsAppearance => '外觀';
+
+  @override
+  String get settingsData => '資料';
+
+  @override
+  String get settingsAccount => '帳號';
+
+  @override
+  String get themeMode => '主題模式';
+
+  @override
+  String get themeSystem => '系統';
+
+  @override
+  String get themeLight => '淺色';
+
+  @override
+  String get themeDark => '深色';
+
+  @override
+  String get dynamicColor => '動態取色';
+
+  @override
+  String get dynamicColorHint => '跟隨系統桌布顏色（Material You）';
+
+  @override
+  String get themeColor => '主題顏色';
+
+  @override
+  String get clearSearchHistory => '清除搜尋紀錄';
+
+  @override
+  String get searchHistoryCleared => '搜尋紀錄已清除';
+
+  @override
+  String get confirmLogout => '確定登出所有帳號？';
+
+  @override
+  String get muteUser => '靜音';
+
+  @override
+  String get unmuteUser => '取消靜音';
+
+  @override
+  String get blockUser => '封鎖';
+
+  @override
+  String get unblockUser => '取消封鎖';
+
+  @override
+  String get userMuted => '已靜音';
+
+  @override
+  String get userUnmuted => '已取消靜音';
+
+  @override
+  String get userBlocked => '已封鎖';
+
+  @override
+  String get userUnblocked => '已取消封鎖';
+
+  @override
+  String confirmBlock(String screenName) {
+    return '封鎖 @$screenName？對方將無法關注你或查看你的推文。';
+  }
+
+  @override
+  String get notifications => '通知';
+
+  @override
+  String get noNotifications => '暫無通知';
+
+  @override
+  String pollVotes(int count) {
+    return '$count 票';
+  }
+
+  @override
+  String get pollEnded => '已結束';
+
+  @override
+  String get settingsGeneral => '通用';
+
+  @override
+  String get settingsAppearanceSubtitle => '主題模式、顏色、字型';
+
+  @override
+  String get settingsGeneralSubtitle => '語言、時間顯示、啟動行為';
+
+  @override
+  String get settingsNotificationsSubtitle => '選擇要顯示的通知類型';
+
+  @override
+  String get settingsPrivacy => '隱私';
+
+  @override
+  String get settingsPrivacySubtitle => '靜音與封鎖的用戶';
+
+  @override
+  String get settingsDataSubtitle => '搜尋紀錄與快取';
+
+  @override
+  String get refreshOnLaunch => '啟動時自動重新整理';
+
+  @override
+  String get refreshOnLaunchHint => '開啟應用程式時自動載入最新內容；關閉後先顯示上次的快取';
+
+  @override
+  String get notifLikes => '喜歡';
+
+  @override
+  String get notifRetweets => '轉推';
+
+  @override
+  String get notifFollows => '新粉絲';
+
+  @override
+  String get notifMentions => '提及與回覆';
+
+  @override
+  String get notifOther => '其他';
+
+  @override
+  String get mutedUsers => '靜音清單';
+
+  @override
+  String get blockedUsers => '封鎖清單';
+
+  @override
+  String get noMutedUsers => '沒有靜音的用戶';
+
+  @override
+  String get noBlockedUsers => '沒有封鎖的用戶';
+
+  @override
+  String get clearCache => '清除快取';
+
+  @override
+  String get clearCacheHint => '清除時間線、通知和個人資料的本地快取';
+
+  @override
+  String get cacheCleared => '快取已清除';
+
+  @override
+  String get settingsMedia => '媒體';
+
+  @override
+  String get settingsMediaSubtitle => '圖片清晰度、省流模式、敏感內容';
+
+  @override
+  String get language => '介面語言';
+
+  @override
+  String get languageSystem => '跟隨系統';
+
+  @override
+  String get absoluteTime => '絕對時間顯示';
+
+  @override
+  String get absoluteTimeHint => '用具體日期時間取代「3 小時前」';
+
+  @override
+  String get mediaQualityTitle => '時間線圖片清晰度';
+
+  @override
+  String get mediaQualitySmall => '小';
+
+  @override
+  String get mediaQualityMedium => '中';
+
+  @override
+  String get mediaQualityLarge => '大';
+
+  @override
+  String get dataSaver => '省流模式';
+
+  @override
+  String get dataSaverHint => '時間線圖片需點按後才載入';
+
+  @override
+  String get blurSensitive => '遮蔽敏感內容';
+
+  @override
+  String get blurSensitiveHint => '標記為敏感的媒體需點按後顯示';
+
+  @override
+  String get tapToLoadImages => '點按載入圖片';
+
+  @override
+  String get sensitiveMediaGate => '敏感內容，點按查看';
+
+  @override
+  String get hideRetweets => '隱藏轉推';
+
+  @override
+  String get hideRetweetsHint => '首頁時間線不顯示轉推';
+
+  @override
+  String get saveSearchHistorySetting => '儲存搜尋紀錄';
+
+  @override
+  String get markMediaSensitive => '發推時標記媒體為敏感內容';
+
+  @override
+  String get markMediaSensitiveHint => '上傳的圖片預設帶有敏感內容標記';
+
+  @override
+  String get customFont => '自訂字型';
+
+  @override
+  String get customFontDefault => '預設字型（點按選擇本地 .ttf / .otf 檔案）';
+
+  @override
+  String get restoreDefaultFont => '恢復預設字型';
+
+  @override
+  String get saveVideo => '保存影片';
+
+  @override
+  String videoSaved(String path) {
+    return '已保存至 $path';
+  }
+
+  @override
+  String get playbackSpeed => '播放速度';
+
+  @override
+  String get portraitMode => '直向';
+
+  @override
+  String get landscapeMode => '橫向';
 }

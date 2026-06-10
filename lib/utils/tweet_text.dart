@@ -55,7 +55,7 @@ class TweetPhotoItem {
 
 List<TweetPhotoItem> tweetPhotoItems(TweetWithCard tweet) {
   return tweetMedia(tweet)
-      .where((m) => m.type == 'photo' || m.type == 'animated_gif')
+      .where((m) => m.type == 'photo')
       .map((m) {
         final url = m.mediaUrlHttps ?? m.mediaUrl ?? '';
         return TweetPhotoItem(
@@ -66,6 +66,74 @@ List<TweetPhotoItem> tweetPhotoItems(TweetWithCard tweet) {
       })
       .where((item) => item.url.isNotEmpty)
       .toList();
+}
+
+class TweetVideoItem {
+  final String videoUrl;
+  final String posterUrl;
+  final bool isGif;
+  final Duration? duration;
+  final double aspectRatio;
+  final String? title;
+  final String? artist;
+
+  const TweetVideoItem({
+    required this.videoUrl,
+    required this.posterUrl,
+    required this.isGif,
+    required this.duration,
+    required this.aspectRatio,
+    this.title,
+    this.artist,
+  });
+}
+
+/// Videos and animated GIFs of a tweet (GIFs are served as looping MP4s).
+List<TweetVideoItem> tweetVideoItems(TweetWithCard tweet) {
+  final source = displayTweet(tweet);
+  final rawTitle = (source.fullText ?? '').trim();
+  final title = rawTitle.length > 80 ? '${rawTitle.substring(0, 80)}…' : rawTitle;
+  final screenName = source.user?.screenName;
+  final artist = screenName != null && screenName.isNotEmpty ? '@$screenName' : null;
+
+  final items = <TweetVideoItem>[];
+  for (final media in tweetMedia(tweet)) {
+    if (media.type != 'video' && media.type != 'animated_gif') {
+      continue;
+    }
+    // Pick the highest-bitrate MP4 variant.
+    final variants = (media.videoInfo?.variants ?? [])
+        .where((v) => v.contentType == 'video/mp4' && (v.url?.isNotEmpty ?? false))
+        .toList()
+      ..sort((a, b) => (b.bitrate ?? 0).compareTo(a.bitrate ?? 0));
+    if (variants.isEmpty) {
+      continue;
+    }
+
+    final aspect = media.videoInfo?.aspectRatio;
+    final width = media.sizes?.large?.w;
+    final height = media.sizes?.large?.h;
+    double aspectRatio;
+    if (aspect != null && aspect.length == 2 && aspect[1] != 0) {
+      aspectRatio = aspect[0] / aspect[1];
+    } else if (width != null && height != null && height != 0) {
+      aspectRatio = width / height;
+    } else {
+      aspectRatio = 16 / 9;
+    }
+
+    final durationMillis = media.videoInfo?.durationMillis;
+    items.add(TweetVideoItem(
+      videoUrl: variants.first.url!,
+      posterUrl: media.mediaUrlHttps ?? media.mediaUrl ?? '',
+      isGif: media.type == 'animated_gif',
+      duration: durationMillis == null ? null : Duration(milliseconds: durationMillis),
+      aspectRatio: aspectRatio,
+      title: title.isEmpty ? null : title,
+      artist: artist,
+    ));
+  }
+  return items;
 }
 
 /// Reply depth relative to a focal tweet (1 = direct reply, 2 = reply to a reply, …).

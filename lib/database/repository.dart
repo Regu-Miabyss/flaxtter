@@ -6,6 +6,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 const String tableAccounts = 'accounts';
+const String tableSearchHistory = 'search_history';
+const String tableJsonCache = 'json_cache';
 
 class Repository {
   static Database? _database;
@@ -33,11 +35,29 @@ class Repository {
 
     _database = await openDatabase(
       dbPath,
-      version: 1,
+      version: 3,
       onCreate: (db, version) async {
         await db.execute(
           'CREATE TABLE IF NOT EXISTS $tableAccounts (id TEXT PRIMARY KEY, screen_name TEXT, auth_header VARCHAR)',
         );
+        await db.execute(
+          'CREATE TABLE IF NOT EXISTS $tableSearchHistory (query TEXT PRIMARY KEY, created_at INTEGER)',
+        );
+        await db.execute(
+          'CREATE TABLE IF NOT EXISTS $tableJsonCache (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER)',
+        );
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'CREATE TABLE IF NOT EXISTS $tableSearchHistory (query TEXT PRIMARY KEY, created_at INTEGER)',
+          );
+        }
+        if (oldVersion < 3) {
+          await db.execute(
+            'CREATE TABLE IF NOT EXISTS $tableJsonCache (key TEXT PRIMARY KEY, value TEXT, updated_at INTEGER)',
+          );
+        }
       },
     );
     return _database!;

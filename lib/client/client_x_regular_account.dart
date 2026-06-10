@@ -77,6 +77,30 @@ class XRegularAccount {
     return http.post(uri, headers: h, body: body);
   }
 
+  static Future<http.Response> postMultipart(
+    Uri uri, {
+    Map<String, String>? fields,
+    List<http.MultipartFile>? files,
+    required Logger log,
+    required Map<dynamic, dynamic> authHeader,
+  }) async {
+    final baseHeaders = await TwitterHeaders.getHeaders(uri, method: 'POST');
+    // MultipartRequest must set its own content-type with the boundary.
+    baseHeaders.remove('content-type');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers.addAll(baseHeaders);
+    if (fields != null) {
+      request.fields.addAll(fields);
+    }
+    if (files != null) {
+      request.files.addAll(files);
+    }
+
+    final streamed = await request.send();
+    return http.Response.fromStream(streamed);
+  }
+
   static Future<void> deleteAccount(String username) async {
     var database = await Repository.writable();
     await database.delete(tableAccounts, where: 'id = ?', whereArgs: [username]);

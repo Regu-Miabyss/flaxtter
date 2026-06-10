@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 const _imageAlbumName = 'Flaxtter';
+const _videoAlbumName = 'Flaxtter';
 
 Future<void> showMediaActionSnackBar(BuildContext context, String message) {
   if (!context.mounted) {
@@ -121,6 +122,51 @@ Future<File> downloadMediaFile(String url, {String? fileName}) async {
 Future<void> copyText(BuildContext context, String text, String message) async {
   await Clipboard.setData(ClipboardData(text: text));
   await showMediaActionSnackBar(context, message);
+}
+
+Future<String> saveVideoBytesToAlbum(String filePath, {String? baseName}) async {
+  final stamp = DateTime.now().millisecondsSinceEpoch;
+  final name = baseName ?? 'flaxtter_$stamp';
+  final fileName = '$name.mp4';
+
+  if (Platform.isAndroid || Platform.isIOS) {
+    await _ensureGalleryAccess();
+    await Gal.putVideo(filePath, album: _videoAlbumName);
+    if (Platform.isAndroid) {
+      return 'Movies/$_videoAlbumName/$fileName';
+    }
+    return '$_videoAlbumName/$fileName';
+  }
+
+  final videosRoot = Platform.environment['XDG_VIDEOS_DIR'] ??
+      p.join(Platform.environment['HOME'] ?? '', 'Videos');
+  final directory = Directory(p.join(videosRoot, _videoAlbumName));
+  if (!await directory.exists()) {
+    await directory.create(recursive: true);
+  }
+  final target = File(p.join(directory.path, fileName));
+  await File(filePath).copy(target.path);
+  return target.path;
+}
+
+Future<void> saveVideo(BuildContext context, String videoUrl) async {
+  final l10n = AppLocalizations.of(context);
+  try {
+    final file = await downloadMediaFile(
+      videoUrl,
+      fileName: 'flaxtter_${DateTime.now().millisecondsSinceEpoch}.mp4',
+    );
+    final savedPath = await saveVideoBytesToAlbum(file.path);
+    if (!context.mounted) {
+      return;
+    }
+    await showMediaActionSnackBar(context, l10n.videoSaved(savedPath));
+  } catch (e) {
+    if (!context.mounted) {
+      return;
+    }
+    await showMediaActionSnackBar(context, l10n.actionFailed(e.toString()));
+  }
 }
 
 Future<void> saveImage(BuildContext context, String imageUrl) async {

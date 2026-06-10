@@ -155,5 +155,124 @@
   "deleteTweet": "刪除",
   "confirmDeleteTweet": "確定刪除這則推文？",
   "tweetDeleted": "已刪除",
-  "tweetManage": "管理"
+  "tweetManage": "管理",
+  "composeTweet": "發推",
+  "newTweetHint": "有什麼新鮮事？",
+  "addPhotos": "新增圖片",
+  "newTweet": "新建推文",
+  "bookmarks": "書籤",
+  "noBookmarks": "暫無書籤",
+  "bookmarkAdded": "已加入書籤",
+  "bookmarkRemoved": "已移除書籤",
+  "recentSearches": "最近搜尋",
+  "clearAll": "清除",
+  "uploadingImages": "正在上傳圖片 {current}/{total}",
+  "@uploadingImages": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settings": "設定",
+  "settingsAppearance": "外觀",
+  "settingsData": "資料",
+  "settingsAccount": "帳號",
+  "themeMode": "主題模式",
+  "themeSystem": "系統",
+  "themeLight": "淺色",
+  "themeDark": "深色",
+  "dynamicColor": "動態取色",
+  "dynamicColorHint": "跟隨系統桌布顏色（Material You）",
+  "themeColor": "主題顏色",
+  "clearSearchHistory": "清除搜尋紀錄",
+  "searchHistoryCleared": "搜尋紀錄已清除",
+  "confirmLogout": "確定登出所有帳號？",
+  "muteUser": "靜音",
+  "unmuteUser": "取消靜音",
+  "blockUser": "封鎖",
+  "unblockUser": "取消封鎖",
+  "userMuted": "已靜音",
+  "userUnmuted": "已取消靜音",
+  "userBlocked": "已封鎖",
+  "userUnblocked": "已取消封鎖",
+  "confirmBlock": "封鎖 @{screenName}？對方將無法關注你或查看你的推文。",
+  "@confirmBlock": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "notifications": "通知",
+  "noNotifications": "暫無通知",
+  "pollVotes": "{count} 票",
+  "@pollVotes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pollEnded": "已結束",
+  "settingsGeneral": "通用",
+  "settingsAppearanceSubtitle": "主題模式、顏色、字型",
+  "settingsGeneralSubtitle": "語言、時間顯示、啟動行為",
+  "settingsNotificationsSubtitle": "選擇要顯示的通知類型",
+  "settingsPrivacy": "隱私",
+  "settingsPrivacySubtitle": "靜音與封鎖的用戶",
+  "settingsDataSubtitle": "搜尋紀錄與快取",
+  "refreshOnLaunch": "啟動時自動重新整理",
+  "refreshOnLaunchHint": "開啟應用程式時自動載入最新內容；關閉後先顯示上次的快取",
+  "notifLikes": "喜歡",
+  "notifRetweets": "轉推",
+  "notifFollows": "新粉絲",
+  "notifMentions": "提及與回覆",
+  "notifOther": "其他",
+  "mutedUsers": "靜音清單",
+  "blockedUsers": "封鎖清單",
+  "noMutedUsers": "沒有靜音的用戶",
+  "noBlockedUsers": "沒有封鎖的用戶",
+  "clearCache": "清除快取",
+  "clearCacheHint": "清除時間線、通知和個人資料的本地快取",
+  "cacheCleared": "快取已清除",
+  "settingsMedia": "媒體",
+  "settingsMediaSubtitle": "圖片清晰度、省流模式、敏感內容",
+  "language": "介面語言",
+  "languageSystem": "跟隨系統",
+  "absoluteTime": "絕對時間顯示",
+  "absoluteTimeHint": "用具體日期時間取代「3 小時前」",
+  "mediaQualityTitle": "時間線圖片清晰度",
+  "mediaQualitySmall": "小",
+  "mediaQualityMedium": "中",
+  "mediaQualityLarge": "大",
+  "dataSaver": "省流模式",
+  "dataSaverHint": "時間線圖片需點按後才載入",
+  "blurSensitive": "遮蔽敏感內容",
+  "blurSensitiveHint": "標記為敏感的媒體需點按後顯示",
+  "tapToLoadImages": "點按載入圖片",
+  "sensitiveMediaGate": "敏感內容，點按查看",
+  "hideRetweets": "隱藏轉推",
+  "hideRetweetsHint": "首頁時間線不顯示轉推",
+  "saveSearchHistorySetting": "儲存搜尋紀錄",
+  "markMediaSensitive": "發推時標記媒體為敏感內容",
+  "markMediaSensitiveHint": "上傳的圖片預設帶有敏感內容標記",
+  "customFont": "自訂字型",
+  "customFontDefault": "預設字型（點按選擇本地 .ttf / .otf 檔案）",
+  "restoreDefaultFont": "恢復預設字型",
+  "saveVideo": "保存影片",
+  "videoSaved": "已保存至 {path}",
+  "@videoSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "playbackSpeed": "播放速度",
+  "portraitMode": "直向",
+  "landscapeMode": "橫向"
 }

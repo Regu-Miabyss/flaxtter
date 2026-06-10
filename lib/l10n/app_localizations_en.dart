@@ -277,4 +277,286 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tweetManage => 'Manage';
+
+  @override
+  String get composeTweet => 'Compose';
+
+  @override
+  String get newTweetHint => 'What\'s happening?';
+
+  @override
+  String get addPhotos => 'Add photos';
+
+  @override
+  String get newTweet => 'New post';
+
+  @override
+  String get bookmarks => 'Bookmarks';
+
+  @override
+  String get noBookmarks => 'No bookmarks yet';
+
+  @override
+  String get bookmarkAdded => 'Added to bookmarks';
+
+  @override
+  String get bookmarkRemoved => 'Removed from bookmarks';
+
+  @override
+  String get recentSearches => 'Recent searches';
+
+  @override
+  String get clearAll => 'Clear';
+
+  @override
+  String uploadingImages(int current, int total) {
+    return 'Uploading image $current/$total';
+  }
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsData => 'Data';
+
+  @override
+  String get settingsAccount => 'Account';
+
+  @override
+  String get themeMode => 'Theme mode';
+
+  @override
+  String get themeSystem => 'System';
+
+  @override
+  String get themeLight => 'Light';
+
+  @override
+  String get themeDark => 'Dark';
+
+  @override
+  String get dynamicColor => 'Dynamic color';
+
+  @override
+  String get dynamicColorHint =>
+      'Follow system wallpaper colors (Material You)';
+
+  @override
+  String get themeColor => 'Theme color';
+
+  @override
+  String get clearSearchHistory => 'Clear search history';
+
+  @override
+  String get searchHistoryCleared => 'Search history cleared';
+
+  @override
+  String get confirmLogout => 'Log out of all accounts?';
+
+  @override
+  String get muteUser => 'Mute';
+
+  @override
+  String get unmuteUser => 'Unmute';
+
+  @override
+  String get blockUser => 'Block';
+
+  @override
+  String get unblockUser => 'Unblock';
+
+  @override
+  String get userMuted => 'Muted';
+
+  @override
+  String get userUnmuted => 'Unmuted';
+
+  @override
+  String get userBlocked => 'Blocked';
+
+  @override
+  String get userUnblocked => 'Unblocked';
+
+  @override
+  String confirmBlock(String screenName) {
+    return 'Block @$screenName? They will not be able to follow you or view your posts.';
+  }
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get noNotifications => 'No notifications yet';
+
+  @override
+  String pollVotes(int count) {
+    return '$count votes';
+  }
+
+  @override
+  String get pollEnded => 'Final results';
+
+  @override
+  String get settingsGeneral => 'General';
+
+  @override
+  String get settingsAppearanceSubtitle => 'Theme mode, colors, font';
+
+  @override
+  String get settingsGeneralSubtitle =>
+      'Language, time display, launch behavior';
+
+  @override
+  String get settingsNotificationsSubtitle =>
+      'Choose which notifications to show';
+
+  @override
+  String get settingsPrivacy => 'Privacy';
+
+  @override
+  String get settingsPrivacySubtitle => 'Muted and blocked users';
+
+  @override
+  String get settingsDataSubtitle => 'Search history and cache';
+
+  @override
+  String get refreshOnLaunch => 'Refresh on launch';
+
+  @override
+  String get refreshOnLaunchHint =>
+      'Load fresh content when the app starts; otherwise show cached content first';
+
+  @override
+  String get notifLikes => 'Likes';
+
+  @override
+  String get notifRetweets => 'Retweets';
+
+  @override
+  String get notifFollows => 'New followers';
+
+  @override
+  String get notifMentions => 'Mentions & replies';
+
+  @override
+  String get notifOther => 'Other';
+
+  @override
+  String get mutedUsers => 'Muted users';
+
+  @override
+  String get blockedUsers => 'Blocked users';
+
+  @override
+  String get noMutedUsers => 'No muted users';
+
+  @override
+  String get noBlockedUsers => 'No blocked users';
+
+  @override
+  String get clearCache => 'Clear cache';
+
+  @override
+  String get clearCacheHint =>
+      'Clears locally cached timelines, notifications and profiles';
+
+  @override
+  String get cacheCleared => 'Cache cleared';
+
+  @override
+  String get settingsMedia => 'Media';
+
+  @override
+  String get settingsMediaSubtitle =>
+      'Image quality, data saver, sensitive content';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get languageSystem => 'Follow system';
+
+  @override
+  String get absoluteTime => 'Absolute timestamps';
+
+  @override
+  String get absoluteTimeHint =>
+      'Show exact date/time instead of \"3 hours ago\"';
+
+  @override
+  String get mediaQualityTitle => 'Timeline image quality';
+
+  @override
+  String get mediaQualitySmall => 'Small';
+
+  @override
+  String get mediaQualityMedium => 'Medium';
+
+  @override
+  String get mediaQualityLarge => 'Large';
+
+  @override
+  String get dataSaver => 'Data saver';
+
+  @override
+  String get dataSaverHint => 'Timeline images load only when tapped';
+
+  @override
+  String get blurSensitive => 'Hide sensitive content';
+
+  @override
+  String get blurSensitiveHint =>
+      'Media marked as sensitive requires a tap to show';
+
+  @override
+  String get tapToLoadImages => 'Tap to load images';
+
+  @override
+  String get sensitiveMediaGate => 'Sensitive content, tap to view';
+
+  @override
+  String get hideRetweets => 'Hide retweets';
+
+  @override
+  String get hideRetweetsHint => 'Don\'t show retweets in the home timeline';
+
+  @override
+  String get saveSearchHistorySetting => 'Save search history';
+
+  @override
+  String get markMediaSensitive => 'Mark media as sensitive when posting';
+
+  @override
+  String get markMediaSensitiveHint =>
+      'Uploaded images carry the sensitive content flag by default';
+
+  @override
+  String get customFont => 'Custom font';
+
+  @override
+  String get customFontDefault =>
+      'Default font (tap to choose a local .ttf / .otf file)';
+
+  @override
+  String get restoreDefaultFont => 'Restore default font';
+
+  @override
+  String get saveVideo => 'Save video';
+
+  @override
+  String videoSaved(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
+  String get playbackSpeed => 'Playback speed';
+
+  @override
+  String get portraitMode => 'Portrait';
+
+  @override
+  String get landscapeMode => 'Landscape';
 }

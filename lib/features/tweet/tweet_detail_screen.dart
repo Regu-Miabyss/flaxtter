@@ -5,11 +5,14 @@ import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/widgets/cursor_paging.dart';
 import 'package:flaxtter/widgets/paged_list_delegates.dart';
 import 'package:flaxtter/widgets/pull_to_refresh.dart';
+import 'package:flaxtter/utils/notifiers.dart';
+import 'package:flaxtter/utils/tweet_manage.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
 import 'package:flaxtter/widgets/tweet_compose_sheet.dart';
 import 'package:flaxtter/widgets/tweet_tile.dart';
 import 'package:flaxtter/utils/media_actions.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
+import 'package:provider/provider.dart';
 
 void openTweetDetail(
   BuildContext context, {
@@ -45,6 +48,7 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
   CursorPagingState<int, TweetWithCard, String> _pagingState = CursorPagingState();
   final Set<String> _seenIds = {};
   var _retryScheduled = false;
+  late final TweetActionNotifier _tweetActions;
 
   @override
   void initState() {
@@ -53,7 +57,49 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
     if (_focalTweet != null) {
       _loadingFocal = false;
     }
+    _tweetActions = context.read<TweetActionNotifier>();
+    _tweetActions.addListener(_onTweetAction);
     WidgetsBinding.instance.addPostFrameCallback((_) => _fetchNextPage());
+  }
+
+  @override
+  void dispose() {
+    _tweetActions.removeListener(_onTweetAction);
+    super.dispose();
+  }
+
+  void _onTweetAction() {
+    final event = _tweetActions.event;
+    if (event == null || !mounted) {
+      return;
+    }
+    switch (event.kind) {
+      case TweetActionKind.deleted:
+        final id = event.tweetId;
+        if (id == null) {
+          return;
+        }
+        if (id == widget.tweetId) {
+          // The focal tweet is gone; close this screen if it is on top.
+          final route = ModalRoute.of(context);
+          if (route != null && route.isCurrent) {
+            Navigator.pop(context);
+          }
+          return;
+        }
+        final newPages = pagesWithoutTweet(_pagingState.pages, id);
+        if (newPages != null) {
+          _seenIds.remove(id);
+          setState(() => _pagingState = _pagingState.copyWithEx(pages: newPages));
+        }
+      case TweetActionKind.replied:
+        final id = event.tweetId;
+        if (id != null && (id == widget.tweetId || _seenIds.contains(id))) {
+          _refreshAll();
+        }
+      case TweetActionKind.posted:
+        break;
+    }
   }
 
   Future<void> _fetchNextPage() async {
@@ -169,10 +215,7 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
   }
 
   Future<void> _onReplyPosted() async {
-    await _refreshAll();
-    if (!mounted) {
-      return;
-    }
+    // The replies list refreshes via the global replied event.
     await showMediaActionSnackBar(context, AppLocalizations.of(context).tweetPosted);
   }
 
@@ -259,8 +302,6 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
                   expandedMedia: true,
                   onUserTap: () => _openProfile(focal.user?.screenName),
                   onMentionTap: _openProfile,
-                  onReplied: _refreshAll,
-                  onDeleted: _refreshAll,
                 ),
               ),
               PagedSliverList<int, TweetWithCard>(
@@ -283,7 +324,6 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
                       replyIndent: nestedReplyIndent(depth),
                       onUserTap: () => _openProfile(tweet.user?.screenName),
                       onMentionTap: _openProfile,
-                      onDeleted: _refreshAll,
                     );
                   },
                 ),

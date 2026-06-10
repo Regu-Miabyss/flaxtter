@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flaxtter/l10n/app_localizations.dart';
+import 'package:flaxtter/utils/app_settings.dart';
 import 'package:flaxtter/utils/image_layout.dart';
 import 'package:flaxtter/utils/interactive_content.dart';
 import 'package:flaxtter/utils/media_actions.dart';
@@ -7,19 +9,33 @@ import 'package:flaxtter/widgets/linear_slide_image_stack.dart';
 import 'package:flaxtter/widgets/network_image_with_progress.dart';
 import 'package:flaxtter/widgets/tweet_detail_image.dart';
 import 'package:flaxtter/widgets/tweet_image_viewer.dart';
+import 'package:provider/provider.dart';
 
 enum TweetMediaLayout { compact, expanded }
+
+/// Appends the X thumbnail quality parameter to a pbs.twimg.com media URL.
+String mediaUrlWithQuality(String url, MediaQuality quality) {
+  if (!url.contains('pbs.twimg.com')) {
+    return url;
+  }
+  return url.contains('?') ? '$url&name=${quality.name}' : '$url?name=${quality.name}';
+}
 
 class TweetMediaGallery extends StatefulWidget {
   final List<TweetPhotoItem> images;
   final TweetMediaLayout layout;
   final String? statusUrl;
 
+  /// Marks the parent tweet as possibly sensitive (blurred behind a tap gate
+  /// when the corresponding setting is on).
+  final bool sensitive;
+
   const TweetMediaGallery({
     super.key,
     required this.images,
     this.layout = TweetMediaLayout.compact,
     this.statusUrl,
+    this.sensitive = false,
   });
 
   @override
@@ -31,6 +47,8 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
 
   int _currentIndex = 0;
   int _slideDirection = 1;
+  bool _sensitiveRevealed = false;
+  bool _loadConfirmed = false;
 
   @override
   void didUpdateWidget(covariant TweetMediaGallery oldWidget) {
@@ -75,7 +93,7 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
 
   TweetPhotoItem get _currentImage => widget.images[_currentIndex];
 
-  Widget _buildImage(int index) {
+  Widget _buildImage(int index, MediaQuality quality) {
     final item = widget.images[index];
     if (widget.layout == TweetMediaLayout.expanded) {
       return TweetDetailImage(
@@ -92,12 +110,45 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
     }
 
     return _CompactGalleryImage(
-      imageUrl: item.url,
+      imageUrl: mediaUrlWithQuality(item.url, quality),
       onTap: _openViewer,
       onLongPress: () => showTweetImageContextMenu(
         context,
         imageUrl: item.url,
         statusUrl: widget.statusUrl,
+      ),
+    );
+  }
+
+  Widget _buildGate({required IconData icon, required String label}) {
+    final theme = Theme.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        child: InkWell(
+          onTap: () => setState(() {
+            _sensitiveRevealed = true;
+            _loadConfirmed = true;
+          }),
+          child: SizedBox(
+            height: 140,
+            width: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: 28, color: theme.colorScheme.onSurfaceVariant),
+                const SizedBox(height: 8),
+                Text(
+                  label,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -108,6 +159,17 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
       return const SizedBox.shrink();
     }
 
+    final settings = context.watch<AppSettings>();
+    final l10n = AppLocalizations.of(context);
+
+    if (widget.sensitive && settings.blurSensitiveMedia && !_sensitiveRevealed) {
+      return _buildGate(icon: Icons.visibility_off_outlined, label: l10n.sensitiveMediaGate);
+    }
+    if (settings.dataSaver && !_loadConfirmed) {
+      return _buildGate(icon: Icons.download_outlined, label: l10n.tapToLoadImages);
+    }
+
+    final quality = settings.mediaQuality;
     final hasMultiple = widget.images.length > 1;
 
     return MetaData(
@@ -135,7 +197,7 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
                       index: _currentIndex,
                       slideDirection: _slideDirection,
                       itemCount: widget.images.length,
-                      itemBuilder: (context, index) => _buildImage(index),
+                      itemBuilder: (context, index) => _buildImage(index, quality),
                     ),
                   ),
                   if (hasMultiple && _currentIndex > 0)

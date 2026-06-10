@@ -5,6 +5,8 @@ import 'package:flaxtter/utils/misc.dart';
 class UserWithExtra extends User {
   Map<String, dynamic>? card;
   bool? possiblySensitive;
+  bool? muting;
+  bool? blocking;
 
   UserWithExtra();
 
@@ -46,6 +48,8 @@ class UserWithExtra extends User {
       ..withheldScope = json['withheld_scope'] as String?;
 
     userWithExtra.possiblySensitive = json['possibly_sensitive'] as bool?;
+    userWithExtra.muting = json['muting'] as bool?;
+    userWithExtra.blocking = json['blocking'] as bool?;
     return userWithExtra;
   }
 }

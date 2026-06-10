@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flaxtter/client/client.dart';
 import 'package:flaxtter/features/profile/profile_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
+import 'package:flaxtter/utils/app_settings.dart';
 import 'package:flaxtter/utils/notifiers.dart';
+import 'package:flaxtter/utils/search_history.dart';
+import 'package:flaxtter/utils/tweet_manage.dart';
 import 'package:flaxtter/widgets/cursor_paging.dart';
 import 'package:flaxtter/widgets/flaxtter_paged_list_view.dart';
 import 'package:flaxtter/widgets/paged_list_delegates.dart';
@@ -38,6 +41,9 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   List<Trend>? _trends;
   Object? _trendsError;
   bool _trendsLoading = false;
+  List<String> _searchHistory = const [];
+
+  late final TweetActionNotifier _tweetActions;
 
   @override
   void initState() {
@@ -47,14 +53,72 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       _loadTrends();
     });
     context.read<SearchRequestNotifier>().addListener(_consumePendingSearch);
+    _tweetActions = context.read<TweetActionNotifier>();
+    _tweetActions.addListener(_onTweetAction);
+    _loadSearchHistory();
+  }
+
+  Future<void> _loadSearchHistory() async {
+    final history = await getSearchHistory();
+    if (mounted) {
+      setState(() => _searchHistory = history);
+    }
+  }
+
+  Future<void> _saveToHistory(String query) async {
+    if (!context.read<AppSettings>().saveSearchHistory) {
+      return;
+    }
+    await addSearchHistory(query);
+    await _loadSearchHistory();
+  }
+
+  Future<void> _removeFromHistory(String query) async {
+    await removeSearchHistory(query);
+    await _loadSearchHistory();
+  }
+
+  Future<void> _clearHistory() async {
+    await clearSearchHistory();
+    if (mounted) {
+      setState(() => _searchHistory = const []);
+    }
+  }
+
+  Future<void> _searchFromHistory(String query) async {
+    _queryController.text = query;
+    await _search();
   }
 
   @override
   void dispose() {
     context.read<SearchRequestNotifier>().removeListener(_consumePendingSearch);
+    _tweetActions.removeListener(_onTweetAction);
     _resultTabController?.dispose();
     _queryController.dispose();
     super.dispose();
+  }
+
+  void _onTweetAction() {
+    final event = _tweetActions.event;
+    if (event == null || !mounted) {
+      return;
+    }
+    if (event.kind != TweetActionKind.deleted || event.tweetId == null) {
+      return;
+    }
+    var changed = false;
+    for (final mode in _SearchResultMode.values) {
+      final state = _pagingStates[mode]!;
+      final newPages = pagesWithoutTweet(state.pages, event.tweetId!);
+      if (newPages != null) {
+        _pagingStates[mode] = state.copyWithEx(pages: newPages);
+        changed = true;
+      }
+    }
+    if (changed) {
+      setState(() {});
+    }
   }
 
   CursorPagingState<int, TweetWithCard, String> get _currentPagingState => _pagingStates[_resultMode]!;
@@ -169,10 +233,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       if (screenName.isEmpty) {
         return;
       }
+      _saveToHistory(query);
       _openProfile(screenName);
       return;
     }
 
+    _saveToHistory(query);
     _ensureResultTabs();
     setState(() {
       _activeQuery = query;
@@ -292,12 +358,27 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         ],
         Expanded(
           child: _activeQuery == null
-              ? _SearchTrendsPanel(
-                  loading: _trendsLoading,
-                  error: _trendsError,
-                  trends: _trends,
-                  onRefresh: _loadTrends,
-                  onTrendTap: _searchFromTrend,
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_searchHistory.isNotEmpty &&
+                        context.watch<AppSettings>().saveSearchHistory)
+                      _SearchHistoryPanel(
+                        history: _searchHistory,
+                        onQueryTap: _searchFromHistory,
+                        onQueryRemove: _removeFromHistory,
+                        onClear: _clearHistory,
+                      ),
+                    Expanded(
+                      child: _SearchTrendsPanel(
+                        loading: _trendsLoading,
+                        error: _trendsError,
+                        trends: _trends,
+                        onRefresh: _loadTrends,
+                        onTrendTap: _searchFromTrend,
+                      ),
+                    ),
+                  ],
                 )
               : PullToRefresh(
                   onRefresh: _refreshResults,
@@ -324,6 +405,65 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
                   ),
                 ),
         ),
+      ],
+    );
+  }
+}
+
+class _SearchHistoryPanel extends StatelessWidget {
+  final List<String> history;
+  final void Function(String query) onQueryTap;
+  final void Function(String query) onQueryRemove;
+  final VoidCallback onClear;
+
+  const _SearchHistoryPanel({
+    required this.history,
+    required this.onQueryTap,
+    required this.onQueryRemove,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.recentSearches,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              TextButton(
+                onPressed: onClear,
+                child: Text(l10n.clearAll),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              for (final query in history)
+                InputChip(
+                  label: Text(query, overflow: TextOverflow.ellipsis),
+                  onPressed: () => onQueryTap(query),
+                  onDeleted: () => onQueryRemove(query),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 4),
+        const Divider(height: 1),
       ],
     );
   }

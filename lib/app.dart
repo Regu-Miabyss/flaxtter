@@ -4,15 +4,16 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flaxtter/features/home/home_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/app_fonts.dart';
+import 'package:flaxtter/utils/app_settings.dart';
 import 'package:flaxtter/utils/scroll_behavior.dart';
 import 'package:flaxtter/widgets/blank_area_mouse_scroll.dart';
+import 'package:provider/provider.dart';
 
 const _fontFamily = 'GoogleSansFlex';
-const _twitterBlue = Color(0xFF1DA1F2);
 
-ColorScheme _fallbackScheme(Brightness brightness) {
+ColorScheme _seedScheme(int seedColor, Brightness brightness) {
   return ColorScheme.fromSeed(
-    seedColor: _twitterBlue,
+    seedColor: Color(seedColor),
     brightness: brightness,
   );
 }
@@ -43,13 +44,13 @@ ColorScheme _layeredColorScheme(ColorScheme scheme) {
 class FlaxtterApp extends StatelessWidget {
   const FlaxtterApp({super.key});
 
-  ThemeData _theme(ColorScheme colorScheme) {
+  ThemeData _theme(ColorScheme colorScheme, String fontFamily, List<String> fontFallback) {
     final layered = _layeredColorScheme(colorScheme);
     final base = ThemeData(
       colorScheme: layered,
       useMaterial3: true,
-      fontFamily: _fontFamily,
-      fontFamilyFallback: emojiFontFamilyFallback,
+      fontFamily: fontFamily,
+      fontFamilyFallback: fontFallback,
       scaffoldBackgroundColor: layered.surfaceContainerLowest,
     );
     return base.copyWith(
@@ -76,22 +77,35 @@ class FlaxtterApp extends StatelessWidget {
         color: layered.outlineVariant.withValues(alpha: 0.35),
       ),
       textTheme: base.textTheme.apply(
-        fontFamily: _fontFamily,
-        fontFamilyFallback: emojiFontFamilyFallback,
+        fontFamily: fontFamily,
+        fontFamilyFallback: fontFallback,
       ),
       primaryTextTheme: base.primaryTextTheme.apply(
-        fontFamily: _fontFamily,
-        fontFamilyFallback: emojiFontFamilyFallback,
+        fontFamily: fontFamily,
+        fontFamilyFallback: fontFallback,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final settings = context.watch<AppSettings>();
+
+    final fontFamily = settings.customFontFamily ?? _fontFamily;
+    // Keep the bundled font (and emoji) as fallback behind a custom font.
+    final fontFallback = settings.customFontFamily != null
+        ? [_fontFamily, ...emojiFontFamilyFallback]
+        : emojiFontFamilyFallback;
+
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        final lightScheme = lightDynamic ?? _fallbackScheme(Brightness.light);
-        final darkScheme = darkDynamic ?? _fallbackScheme(Brightness.dark);
+        final useDynamic = settings.useDynamicColor;
+        final lightScheme = useDynamic && lightDynamic != null
+            ? lightDynamic
+            : _seedScheme(settings.seedColor, Brightness.light);
+        final darkScheme = useDynamic && darkDynamic != null
+            ? darkDynamic
+            : _seedScheme(settings.seedColor, Brightness.dark);
 
         return MaterialApp(
           scrollBehavior: const FlaxtterScrollBehavior(),
@@ -108,7 +122,7 @@ class FlaxtterApp extends StatelessWidget {
             );
           },
           onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-          locale: const Locale('zh', 'TW'),
+          locale: settings.locale,
           supportedLocales: AppLocalizations.supportedLocales,
           localizationsDelegates: const [
             AppLocalizations.delegate,
@@ -116,8 +130,9 @@ class FlaxtterApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          theme: _theme(lightScheme),
-          darkTheme: _theme(darkScheme),
+          theme: _theme(lightScheme, fontFamily, fontFallback),
+          darkTheme: _theme(darkScheme, fontFamily, fontFallback),
+          themeMode: settings.themeMode,
           routes: {
             '/gate': (_) => const AuthGate(),
           },

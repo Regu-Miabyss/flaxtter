@@ -18,8 +18,6 @@ class TweetTile extends StatefulWidget {
   final bool showActionBar;
   final bool enableCardTap;
   final bool expandedMedia;
-  final VoidCallback? onReplied;
-  final VoidCallback? onDeleted;
   final double replyIndent;
 
   const TweetTile({
@@ -32,8 +30,6 @@ class TweetTile extends StatefulWidget {
     this.showActionBar = true,
     this.enableCardTap = true,
     this.expandedMedia = false,
-    this.onReplied,
-    this.onDeleted,
     this.replyIndent = 0,
   });
 
@@ -110,7 +106,6 @@ class _TweetTileState extends State<TweetTile> {
       context,
       tweet: widget.tweet,
       captureKey: _captureKey,
-      onDeleted: widget.onDeleted,
     );
   }
 
@@ -172,7 +167,6 @@ class _TweetTileState extends State<TweetTile> {
                           child: TweetActionBar(
                             tweet: widget.tweet,
                             captureKey: _captureKey,
-                            onReplied: widget.onReplied,
                           ),
                         ),
                       ),

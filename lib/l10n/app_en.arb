@@ -193,5 +193,124 @@
   "deleteTweet": "Delete",
   "confirmDeleteTweet": "Delete this post?",
   "tweetDeleted": "Deleted",
-  "tweetManage": "Manage"
+  "tweetManage": "Manage",
+  "composeTweet": "Compose",
+  "newTweetHint": "What's happening?",
+  "addPhotos": "Add photos",
+  "newTweet": "New post",
+  "bookmarks": "Bookmarks",
+  "noBookmarks": "No bookmarks yet",
+  "bookmarkAdded": "Added to bookmarks",
+  "bookmarkRemoved": "Removed from bookmarks",
+  "recentSearches": "Recent searches",
+  "clearAll": "Clear",
+  "uploadingImages": "Uploading image {current}/{total}",
+  "@uploadingImages": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "settings": "Settings",
+  "settingsAppearance": "Appearance",
+  "settingsData": "Data",
+  "settingsAccount": "Account",
+  "themeMode": "Theme mode",
+  "themeSystem": "System",
+  "themeLight": "Light",
+  "themeDark": "Dark",
+  "dynamicColor": "Dynamic color",
+  "dynamicColorHint": "Follow system wallpaper colors (Material You)",
+  "themeColor": "Theme color",
+  "clearSearchHistory": "Clear search history",
+  "searchHistoryCleared": "Search history cleared",
+  "confirmLogout": "Log out of all accounts?",
+  "muteUser": "Mute",
+  "unmuteUser": "Unmute",
+  "blockUser": "Block",
+  "unblockUser": "Unblock",
+  "userMuted": "Muted",
+  "userUnmuted": "Unmuted",
+  "userBlocked": "Blocked",
+  "userUnblocked": "Unblocked",
+  "confirmBlock": "Block @{screenName}? They will not be able to follow you or view your posts.",
+  "@confirmBlock": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
+  "notifications": "Notifications",
+  "noNotifications": "No notifications yet",
+  "pollVotes": "{count} votes",
+  "@pollVotes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pollEnded": "Final results",
+  "settingsGeneral": "General",
+  "settingsAppearanceSubtitle": "Theme mode, colors, font",
+  "settingsGeneralSubtitle": "Language, time display, launch behavior",
+  "settingsNotificationsSubtitle": "Choose which notifications to show",
+  "settingsPrivacy": "Privacy",
+  "settingsPrivacySubtitle": "Muted and blocked users",
+  "settingsDataSubtitle": "Search history and cache",
+  "refreshOnLaunch": "Refresh on launch",
+  "refreshOnLaunchHint": "Load fresh content when the app starts; otherwise show cached content first",
+  "notifLikes": "Likes",
+  "notifRetweets": "Retweets",
+  "notifFollows": "New followers",
+  "notifMentions": "Mentions & replies",
+  "notifOther": "Other",
+  "mutedUsers": "Muted users",
+  "blockedUsers": "Blocked users",
+  "noMutedUsers": "No muted users",
+  "noBlockedUsers": "No blocked users",
+  "clearCache": "Clear cache",
+  "clearCacheHint": "Clears locally cached timelines, notifications and profiles",
+  "cacheCleared": "Cache cleared",
+  "settingsMedia": "Media",
+  "settingsMediaSubtitle": "Image quality, data saver, sensitive content",
+  "language": "Language",
+  "languageSystem": "Follow system",
+  "absoluteTime": "Absolute timestamps",
+  "absoluteTimeHint": "Show exact date/time instead of \"3 hours ago\"",
+  "mediaQualityTitle": "Timeline image quality",
+  "mediaQualitySmall": "Small",
+  "mediaQualityMedium": "Medium",
+  "mediaQualityLarge": "Large",
+  "dataSaver": "Data saver",
+  "dataSaverHint": "Timeline images load only when tapped",
+  "blurSensitive": "Hide sensitive content",
+  "blurSensitiveHint": "Media marked as sensitive requires a tap to show",
+  "tapToLoadImages": "Tap to load images",
+  "sensitiveMediaGate": "Sensitive content, tap to view",
+  "hideRetweets": "Hide retweets",
+  "hideRetweetsHint": "Don't show retweets in the home timeline",
+  "saveSearchHistorySetting": "Save search history",
+  "markMediaSensitive": "Mark media as sensitive when posting",
+  "markMediaSensitiveHint": "Uploaded images carry the sensitive content flag by default",
+  "customFont": "Custom font",
+  "customFontDefault": "Default font (tap to choose a local .ttf / .otf file)",
+  "restoreDefaultFont": "Restore default font",
+  "saveVideo": "Save video",
+  "videoSaved": "Saved to {path}",
+  "@videoSaved": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "playbackSpeed": "Playback speed",
+  "portraitMode": "Portrait",
+  "landscapeMode": "Landscape"
 }
