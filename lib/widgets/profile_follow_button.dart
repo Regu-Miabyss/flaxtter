@@ -62,7 +62,11 @@ class _ProfileFollowButtonState extends State<ProfileFollowButton> {
         return;
       }
 
-      final current = accounts.first;
+      final current = await getActiveAccount();
+      if (current == null) {
+        setState(() => _loading = false);
+        return;
+      }
       _currentUserId = current.id;
       if (current.screenName == widget.user.screenName) {
         setState(() => _loading = false);
@@ -94,6 +98,30 @@ class _ProfileFollowButtonState extends State<ProfileFollowButton> {
     }
 
     final wasFollowing = _isFollowing!;
+    if (wasFollowing) {
+      final l10n = AppLocalizations.of(context);
+      final screenName = widget.user.screenName ?? '';
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text(l10n.confirmUnfollow(screenName)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.unfollow),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) {
+        return;
+      }
+    }
+
     setState(() {
       _busy = true;
       _isFollowing = !wasFollowing;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flaxtter/client/client.dart';
 import 'package:flaxtter/features/profile/profile_screen.dart';
@@ -6,6 +8,7 @@ import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/app_settings.dart';
 import 'package:flaxtter/utils/json_cache.dart';
 import 'package:flaxtter/utils/notifiers.dart';
+import 'package:flaxtter/utils/notification_unread.dart';
 import 'package:flaxtter/utils/scroll_to_top_refresh_controller.dart';
 import 'package:flaxtter/utils/time_format.dart';
 import 'package:flaxtter/widgets/cursor_paging.dart';
@@ -13,10 +16,15 @@ import 'package:flaxtter/widgets/flaxtter_paged_list_view.dart';
 import 'package:flaxtter/widgets/paged_list_delegates.dart';
 import 'package:flaxtter/widgets/pull_to_refresh.dart';
 import 'package:flaxtter/widgets/scroll_to_top_fab.dart';
+import 'package:flaxtter/widgets/fade_content_swap.dart';
+import 'package:flaxtter/widgets/tweet_loading_skeleton.dart';
 import 'package:flaxtter/widgets/tweet_tile.dart';
 import 'package:provider/provider.dart';
 
-const _notificationsCacheKey = 'notifications_first_page';
+const _notificationsCacheKeyPrefix = 'notifications_first_page';
+
+String _notificationsCacheKey(NotificationsTimelineType type) =>
+    '${_notificationsCacheKeyPrefix}_${type.restPath}';
 
 NotificationType notificationTypeOf(NotificationEntry entry) {
   if (entry.tweet != null) {
@@ -51,12 +59,19 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with SingleTickerProviderStateMixin {
   CursorPagingState<int, NotificationEntry, String> _pagingState = CursorPagingState();
   bool _initialized = false;
+  Future<void>? _replaceFirstPageTask;
+  int _contentGeneration = 0;
   final ScrollController _scrollController = ScrollController();
   ScrollToTopRefreshController? _ownScrollAction;
   late final TweetActionNotifier _tweetActions;
+  late final NotificationUnreadNotifier _unread;
+  late final TabController _tabController;
+  NotificationsTimelineType _timelineType = NotificationsTimelineType.all;
+  bool _markedSeenThisVisit = false;
 
   ScrollToTopRefreshController get _scrollAction =>
       widget.scrollActionController ?? (_ownScrollAction ??= ScrollToTopRefreshController());
@@ -64,14 +79,38 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
     _tweetActions = context.read<TweetActionNotifier>();
+    _unread = context.read<NotificationUnreadNotifier>();
     _tweetActions.addListener(_onTweetAction);
     _scrollAction.attach([_scrollController], onRefresh: _refresh);
     _init();
   }
 
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) {
+      return;
+    }
+    final type = NotificationsTimelineType.values[_tabController.index];
+    if (type == _timelineType) {
+      return;
+    }
+    setState(() {
+      _timelineType = type;
+      _initialized = false;
+      _pagingState = CursorPagingState();
+      _contentGeneration++;
+      _markedSeenThisVisit = false;
+    });
+    unawaited(_fetchNextPage());
+  }
+
   @override
   void dispose() {
+    unawaited(_markCurrentAsSeen());
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
     _tweetActions.removeListener(_onTweetAction);
     if (_ownScrollAction != null) {
       _ownScrollAction!.dispose();
@@ -85,7 +124,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _init() async {
     final refreshOnLaunch = context.read<AppSettings>().refreshOnLaunch;
 
-    final cached = await getJsonCache(_notificationsCacheKey, maxAge: const Duration(days: 3));
+    final cacheKey = _notificationsCacheKey(_timelineType);
+    final cached = await getJsonCache(cacheKey, maxAge: const Duration(days: 3));
     if (mounted && cached is Map) {
       try {
         final result =
@@ -116,11 +156,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
-  /// Replaces the first page in place, keeping cached content visible while
+  /// Replaces the first page in place, keeping existing content visible while
   /// fresh data loads (and on failure).
-  Future<void> _backgroundRefreshFirstPage() async {
+  Future<void> _backgroundRefreshFirstPage() => _replaceFirstPage(animate: true);
+
+  Future<void> _replaceFirstPage({required bool animate}) {
+    return _replaceFirstPageTask ??= _replaceFirstPageImpl(animate: animate).whenComplete(() {
+      _replaceFirstPageTask = null;
+    });
+  }
+
+  Future<void> _replaceFirstPageImpl({required bool animate}) async {
     try {
-      final result = await Twitter.getNotifications();
+      final result = await Twitter.getNotifications(timelineType: _timelineType);
       if (!mounted) {
         return;
       }
@@ -128,12 +176,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return;
       }
       if (result.raw != null) {
-        await putJsonCache(_notificationsCacheKey, result.raw);
+        await putJsonCache(_notificationsCacheKey(_timelineType), result.raw);
       }
       if (!mounted) {
         return;
       }
       setState(() {
+        if (animate) {
+          _contentGeneration++;
+        }
         _pagingState = _pagingState.copyWithEx(
           isLoading: false,
           error: null,
@@ -144,8 +195,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           consecutiveLoadMoreFailures: 0,
         );
       });
+      unawaited(_markCurrentAsSeen());
     } catch (_) {
-      // Keep showing cached content.
+      // Keep showing existing content.
     }
   }
 
@@ -187,13 +239,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
 
     try {
-      final result = await Twitter.getNotifications(cursor: _pagingState.cursor);
+      final result = await Twitter.getNotifications(
+        cursor: _pagingState.cursor,
+        timelineType: _timelineType,
+      );
       if (!mounted) {
         return;
       }
       final isFirstPage = _pagingState.pages == null;
       if (isFirstPage && result.raw != null) {
-        await putJsonCache(_notificationsCacheKey, result.raw);
+        await putJsonCache(_notificationsCacheKey(_timelineType), result.raw);
       }
 
       setState(() {
@@ -207,6 +262,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           consecutiveLoadMoreFailures: 0,
         );
       });
+      if (isFirstPage) {
+        unawaited(_markCurrentAsSeen());
+      }
     } catch (e) {
       if (!mounted) {
         return;
@@ -219,8 +277,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() => _pagingState = _pagingState.resetEx());
-    await _fetchNextPage();
+    if (!_pagingState.hasLoadedPages) {
+      await _fetchNextPage();
+      return;
+    }
+    await _replaceFirstPage(animate: true);
   }
 
   void _openProfile(String? screenName) {
@@ -266,6 +327,54 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
+  Future<void> _markCurrentAsSeen() async {
+    if (_markedSeenThisVisit || _timelineType != NotificationsTimelineType.all) {
+      return;
+    }
+    final pages = _pagingState.pages;
+    if (pages == null || pages.isEmpty || pages.first.isEmpty) {
+      return;
+    }
+    final newest = pages.first.first.sortIndex;
+    if (newest == null || newest.isEmpty) {
+      return;
+    }
+    _markedSeenThisVisit = true;
+    await _unread.markSeenUpTo(newest);
+  }
+
+  Widget _buildTabBar(AppLocalizations l10n) {
+    return Material(
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: TabBar(
+        controller: _tabController,
+        tabs: [
+          Tab(text: l10n.notifTabAll),
+          Tab(text: l10n.notifTabMentions),
+          Tab(text: l10n.notifTabVerified),
+        ],
+      ),
+    );
+  }
+
+  Widget _wrapUnread(NotificationEntry entry, Widget child) {
+    final unread = _unread.isUnread(entry);
+    if (!unread) {
+      return child;
+    }
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 3,
+          ),
+        ),
+      ),
+      child: child,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -275,7 +384,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (!_initialized) {
       body = PullToRefreshPlaceholder(
         onRefresh: _refresh,
-        child: const Center(child: CircularProgressIndicator()),
+        child: const TweetLoadingSkeleton(),
       );
     } else {
       body = Stack(
@@ -283,11 +392,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: [
           PullToRefresh(
             onRefresh: _refresh,
-            child: FlaxtterPagedListView<int, NotificationEntry>(
-              state: _filteredState(enabledTypes),
-              fetchNextPage: _fetchNextPage,
-              scrollController: _scrollController,
-              builderDelegate: flaxtterPagedDelegate(
+            child: FadeContentSwap(
+              contentKey: _contentGeneration,
+              child: FlaxtterPagedListView<int, NotificationEntry>(
+                state: _filteredState(enabledTypes),
+                fetchNextPage: _fetchNextPage,
+                scrollController: _scrollController,
+                builderDelegate: flaxtterPagedDelegate(
                 l10n: l10n,
                 fetchNextPage: _fetchNextPage,
                 firstPageError: _pagingState.error,
@@ -295,18 +406,26 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 noItemsMessage: l10n.noNotifications,
                 itemBuilder: (context, entry, index) {
                   if (entry.tweet != null) {
-                    return TweetTile(
-                      tweet: entry.tweet!,
-                      onMentionTap: _openProfileNamed,
+                    return _wrapUnread(
+                      entry,
+                      TweetTile(
+                        tweet: entry.tweet!,
+                        onMentionTap: _openProfileNamed,
+                      ),
                     );
                   }
-                  return NotificationTile(
-                    notification: entry.notification!,
-                    onTap: () => _openNotificationTarget(entry.notification!),
-                    onUserTap: _openProfileNamed,
+                  return _wrapUnread(
+                    entry,
+                    NotificationTile(
+                      notification: entry.notification!,
+                      unread: _unread.isUnread(entry),
+                      onTap: () => _openNotificationTarget(entry.notification!),
+                      onUserTap: _openProfileNamed,
+                    ),
                   );
                 },
               ),
+            ),
             ),
           ),
           if (!widget.embedded)
@@ -319,14 +438,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       );
     }
 
+    final tabBar = _buildTabBar(l10n);
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        tabBar,
+        Expanded(child: body),
+      ],
+    );
+
     if (widget.embedded) {
-      return body;
+      return content;
     }
 
     return Scaffold(
       primary: false,
       appBar: AppBar(title: Text(l10n.notifications)),
-      body: body,
+      body: content,
     );
   }
 }
@@ -335,12 +463,14 @@ class NotificationTile extends StatelessWidget {
   final TwitterNotification notification;
   final VoidCallback onTap;
   final void Function(String screenName)? onUserTap;
+  final bool unread;
 
   const NotificationTile({
     super.key,
     required this.notification,
     required this.onTap,
     this.onUserTap,
+    this.unread = false,
   });
 
   (IconData, Color) _iconOf(BuildContext context) {
@@ -369,6 +499,7 @@ class NotificationTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: unread ? theme.colorScheme.primaryContainer.withValues(alpha: 0.25) : null,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),

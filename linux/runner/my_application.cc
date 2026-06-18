@@ -1,6 +1,7 @@
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
+#include <string.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>
 #endif
@@ -14,9 +15,71 @@ struct _MyApplication {
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
+// Default window size and locked aspect ratio (portrait phone proportions).
+static const gint kWindowWidth = 540;
+static const gint kWindowHeight = 960;
+
+static void set_window_aspect_ratio(GtkWindow* window) {
+  const gdouble aspect = (gdouble)kWindowWidth / (gdouble)kWindowHeight;
+
+  GdkGeometry geometry;
+  memset(&geometry, 0, sizeof(geometry));
+  geometry.min_width = 360;
+  geometry.min_height = (gint)(360.0 / aspect + 0.5);
+  geometry.min_aspect = aspect;
+  geometry.max_aspect = aspect;
+
+  gtk_window_set_geometry_hints(
+      window, NULL, &geometry,
+      static_cast<GdkWindowHints>(GDK_HINT_MIN_SIZE | GDK_HINT_ASPECT));
+}
+
+static gboolean should_use_header_bar(GtkWindow* window) {
+#ifdef GDK_WINDOWING_X11
+  GdkScreen* screen = gtk_window_get_screen(window);
+  if (GDK_IS_X11_SCREEN(screen)) {
+    const gchar* wm_name = gdk_x11_screen_get_window_manager_name(screen);
+    if (g_strcmp0(wm_name, "GNOME Shell") != 0) {
+      return FALSE;
+    }
+    return TRUE;
+  }
+#endif
+
+  const gchar* desktop = g_getenv("XDG_CURRENT_DESKTOP");
+  if (desktop != nullptr) {
+    if (g_strstr_len(desktop, -1, "KDE") != nullptr ||
+        g_strstr_len(desktop, -1, "LXQt") != nullptr ||
+        g_strstr_len(desktop, -1, "Xfce") != nullptr) {
+      return FALSE;
+    }
+    if (g_strstr_len(desktop, -1, "GNOME") != nullptr ||
+        g_strstr_len(desktop, -1, "ubuntu") != nullptr) {
+      return TRUE;
+    }
+  }
+
+  if (g_getenv("KDE_SESSION_VERSION") != nullptr) {
+    return FALSE;
+  }
+
+  // Wayland defaults: prefer server-side decorations for broad DE compatibility.
+  return FALSE;
+}
+
+static void apply_theme_background(FlView* view) {
+  GtkWidget* widget = GTK_WIDGET(view);
+  GtkStyleContext* context = gtk_widget_get_style_context(widget);
+  GdkRGBA background_color;
+  if (gtk_style_context_lookup_color(context, "theme_bg_color", &background_color)) {
+    fl_view_set_background_color(view, &background_color);
+  }
+}
+
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+  apply_theme_background(view);
 }
 
 // Implements GApplication::activate.
@@ -25,24 +88,7 @@ static void my_application_activate(GApplication* application) {
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
 
-  // Use a header bar when running in GNOME as this is the common style used
-  // by applications and is the setup most users will be using (e.g. Ubuntu
-  // desktop).
-  // If running on X and not using GNOME then just use a traditional title bar
-  // in case the window manager does more exotic layout, e.g. tiling.
-  // If running on Wayland assume the header bar will work (may need changing
-  // if future cases occur).
-  gboolean use_header_bar = TRUE;
-#ifdef GDK_WINDOWING_X11
-  GdkScreen* screen = gtk_window_get_screen(window);
-  if (GDK_IS_X11_SCREEN(screen)) {
-    const gchar* wm_name = gdk_x11_screen_get_window_manager_name(screen);
-    if (g_strcmp0(wm_name, "GNOME Shell") != 0) {
-      use_header_bar = FALSE;
-    }
-  }
-#endif
-  if (use_header_bar) {
+  if (should_use_header_bar(window)) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
     gtk_header_bar_set_title(header_bar, "flaxtter");
@@ -52,7 +98,8 @@ static void my_application_activate(GApplication* application) {
     gtk_window_set_title(window, "flaxtter");
   }
 
-  gtk_window_set_default_size(window, 540, 960);
+  gtk_window_set_default_size(window, kWindowWidth, kWindowHeight);
+  set_window_aspect_ratio(window);
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(
@@ -60,8 +107,6 @@ static void my_application_activate(GApplication* application) {
 
   FlView* view = fl_view_new(project);
   GdkRGBA background_color;
-  // Background defaults to black, override it here if necessary, e.g. #00000000
-  // for transparent.
   gdk_rgba_parse(&background_color, "#000000");
   fl_view_set_background_color(view, &background_color);
   gtk_widget_set_hexpand(GTK_WIDGET(view), TRUE);

@@ -51,6 +51,7 @@ dependencies:
   wakelock_plus: ^1.5.2
   mpris_service:
     git: https://github.com/alexmercerind/mpris_service
+  window_manager: ^0.5.1
 
 dev_dependencies:
   flutter_test:

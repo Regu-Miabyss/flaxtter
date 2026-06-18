@@ -39,6 +39,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get searchTweetsHint => 'Search tweets, or @username';
 
   @override
+  String searchForQuery(String query) {
+    return 'Search for $query';
+  }
+
+  @override
   String get noResults => 'No results';
 
   @override
@@ -386,6 +391,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get followsYou => 'Follows you';
+
+  @override
+  String confirmUnfollow(String screenName) {
+    return 'Unfollow @$screenName?';
+  }
+
+  @override
   String get notifications => 'Notifications';
 
   @override
@@ -440,6 +453,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notifMentions => 'Mentions & replies';
+
+  @override
+  String get notifTabAll => 'All';
+
+  @override
+  String get notifTabMentions => 'Mentions';
+
+  @override
+  String get notifTabVerified => 'Verified';
 
   @override
   String get notifOther => 'Other';
@@ -544,6 +566,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get restoreDefaultFont => 'Restore default font';
 
   @override
+  String get invalidFontFile => 'The selected file is not a valid font.';
+
+  @override
+  String get customFontRestartRequired =>
+      'Custom font saved. Restart the app to apply it everywhere.';
+
+  @override
+  String get restartLater => 'Restart later';
+
+  @override
+  String get restartNow => 'Restart now';
+
+  @override
+  String get reselectFont => 'Choose again';
+
+  @override
   String get saveVideo => 'Save video';
 
   @override
@@ -559,4 +597,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landscapeMode => 'Landscape';
+
+  @override
+  String get timelineForYou => 'For you';
+
+  @override
+  String get timelineFollowing => 'Following';
+
+  @override
+  String get pinnedTweet => 'Pinned';
+
+  @override
+  String joinedDate(String date) {
+    return 'Joined $date';
+  }
+
+  @override
+  String get trendsLocation => 'Trends location';
+
+  @override
+  String get selectTrendsLocation => 'Select location';
+
+  @override
+  String get searchTrendsLocationHint => 'Search locations';
+
+  @override
+  String get noTrendsLocationMatches => 'No matching locations';
+
+  @override
+  String get trendsWorldwide => 'Worldwide';
+
+  @override
+  String get searchUsers => 'Search users';
+
+  @override
+  String get searchUsersHint => 'Search for people';
+
+  @override
+  String get noUsersFound => 'No users found';
+
+  @override
+  String get textSize => 'Text size';
+
+  @override
+  String get textSizeHint => 'Adjust display text size';
+
+  @override
+  String get switchAccount => 'Switch account';
+
+  @override
+  String get switchAccountHint => 'Choose which logged-in account to use';
+
+  @override
+  String get altText => 'Alt text';
+
+  @override
+  String viewCount(String count) {
+    return '$count views';
+  }
 }

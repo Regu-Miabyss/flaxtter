@@ -45,23 +45,32 @@ class TweetPhotoItem {
   final String url;
   final int? width;
   final int? height;
+  final String? altText;
 
   const TweetPhotoItem({
     required this.url,
     this.width,
     this.height,
+    this.altText,
   });
 }
 
 List<TweetPhotoItem> tweetPhotoItems(TweetWithCard tweet) {
+  final source = displayTweet(tweet);
+  final altMap = source.mediaAltTexts;
   return tweetMedia(tweet)
       .where((m) => m.type == 'photo')
       .map((m) {
         final url = m.mediaUrlHttps ?? m.mediaUrl ?? '';
+        final id = m.idStr;
+        final altText = altMap == null
+            ? null
+            : (altMap[url] ?? (id != null ? altMap[id] : null));
         return TweetPhotoItem(
           url: url,
           width: m.sizes?.large?.w,
           height: m.sizes?.large?.h,
+          altText: altText,
         );
       })
       .where((item) => item.url.isNotEmpty)

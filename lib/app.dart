@@ -1,4 +1,4 @@
-import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flaxtter/widgets/desktop_color_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flaxtter/features/home/home_screen.dart';
@@ -73,6 +73,12 @@ class FlaxtterApp extends StatelessWidget {
           ),
         ),
       ),
+      tabBarTheme: base.tabBarTheme.copyWith(
+        indicatorColor: layered.primary,
+        labelColor: layered.onSurface,
+        unselectedLabelColor: layered.onSurfaceVariant,
+        dividerColor: layered.outlineVariant.withValues(alpha: 0.45),
+      ),
       dividerTheme: DividerThemeData(
         color: layered.outlineVariant.withValues(alpha: 0.35),
       ),
@@ -97,7 +103,7 @@ class FlaxtterApp extends StatelessWidget {
         ? [_fontFamily, ...emojiFontFamilyFallback]
         : emojiFontFamilyFallback;
 
-    return DynamicColorBuilder(
+    return DesktopColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
         final useDynamic = settings.useDynamicColor;
         final lightScheme = useDynamic && lightDynamic != null
@@ -111,12 +117,18 @@ class FlaxtterApp extends StatelessWidget {
           scrollBehavior: const FlaxtterScrollBehavior(),
           builder: (context, child) {
             final theme = Theme.of(context);
+            final settings = context.watch<AppSettings>();
             return BlankAreaMouseDragScroll(
               child: ScrollConfiguration(
                 behavior: const FlaxtterScrollBehavior(),
-                child: DefaultTextStyle(
-                  style: withEmojiFontFallback(theme.textTheme.bodyMedium ?? const TextStyle()),
-                  child: child ?? const SizedBox.shrink(),
+                child: MediaQuery(
+                  data: MediaQuery.of(context).copyWith(
+                    textScaler: TextScaler.linear(settings.textScale),
+                  ),
+                  child: DefaultTextStyle(
+                    style: withEmojiFontFallback(theme.textTheme.bodyMedium ?? const TextStyle()),
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 ),
               ),
             );

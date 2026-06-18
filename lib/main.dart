@@ -4,7 +4,9 @@ import 'package:desktop_webview_linux/desktop_webview_linux.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flaxtter/app.dart';
+import 'package:flaxtter/utils/app_rebirth.dart';
 import 'package:flaxtter/utils/app_settings.dart';
+import 'package:flaxtter/utils/notification_unread.dart';
 import 'package:flaxtter/utils/notifiers.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
@@ -31,14 +33,17 @@ Future<void> main(List<String> args) async {
   await appSettings.loadCustomFont();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AccountAddedNotifier()),
-        ChangeNotifierProvider(create: (_) => SearchRequestNotifier()),
-        ChangeNotifierProvider(create: (_) => TweetActionNotifier()),
-        ChangeNotifierProvider.value(value: appSettings),
-      ],
-      child: const FlaxtterApp(),
+    AppRebirth(
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AccountAddedNotifier()),
+          ChangeNotifierProvider(create: (_) => SearchRequestNotifier()),
+          ChangeNotifierProvider(create: (_) => TweetActionNotifier()),
+          ChangeNotifierProvider(create: (_) => NotificationUnreadNotifier()..start()),
+          ChangeNotifierProvider.value(value: appSettings),
+        ],
+        child: const FlaxtterApp(),
+      ),
     ),
   );
 }

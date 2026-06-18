@@ -135,8 +135,15 @@ class Twitter {
   static final FFCache _cache = FFCache();
 
   static const graphqlSearchTimelineUriPath = '/graphql/nK1dw4oV3k4w5TdtcAdSww/SearchTimeline';
-  static const graphqlHomeLatestTimelineUriPath =
-      '/graphql/BKB7oi212Fi7kQtCBGE4zA/HomeLatestTimeline';
+  static const _gqlHomeTimelineQueryIds = [
+    'jYMvLJJjGjO3aKWY3bP5HA',
+    '-X_hcgQzmHGl29-UXxz4sw',
+  ];
+  static const _gqlHomeLatestTimelineQueryIds = [
+    'iCyHMXVutL66dZyvMtyChA',
+    'BKB7oi212Fi7kQtCBGE4zA',
+    'U0cdisy7QFIoTfu3-Okw0A',
+  ];
   static const searchTweetsUriPath = '/1.1/search/tweets.json';
 
   static final Map<String, String> defaultParams = {
@@ -481,6 +488,10 @@ class Twitter {
     'qToeLeMs43Q8cr7tRYXmaQ',
     'xLjCVTqYWz8CGSprLU349w',
   ];
+  static const _gqlNotificationsTimelineQueryIds = [
+    'Ev6UMJRROInk_RMH2oVbBg',
+    'gzC0OYBCnfdYS4M4Gue7BA',
+  ];
 
   static void _ensureAuthenticated() {
     if (!TwitterAccount.hasAccountAvailable()) {
@@ -784,10 +795,95 @@ class Twitter {
     return card;
   }
 
-  /// Notifications timeline (likes, retweets, follows, mentions...).
-  static Future<NotificationsResult> getNotifications({int count = 40, String? cursor}) async {
+  /// Unread notification badge (excludes DMs).
+  static Future<int> getNotificationBadgeCount() async {
     _ensureAuthenticated();
-    final uri = Uri.https('x.com', '/i/api/2/notifications/all.json', {
+    final uri = Uri.https('x.com', '/i/api/2/badge_count/badge_count.json', {
+      'supports_ntab_urt': '1',
+    });
+    final response = await TwitterAccount.fetch(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+    final result = jsonDecode(response.body) as Map<String, dynamic>;
+    final count = result['ntab_unread_count'] ?? result['total_unread_count'];
+    if (count is int) {
+      return count;
+    }
+    if (count is String) {
+      return int.tryParse(count) ?? 0;
+    }
+    return 0;
+  }
+
+  /// Marks notifications up to [sortIndex] as read on the server.
+  static Future<void> updateNotificationsLastSeenCursor(String sortIndex) async {
+    if (sortIndex.isEmpty) {
+      return;
+    }
+    _ensureAuthenticated();
+    final response = await TwitterAccount.post(
+      Uri.https('x.com', '/i/api/2/notifications/all/last_seen_cursor.json'),
+      body: {'cursor': sortIndex},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+  }
+
+  /// Notifications timeline (likes, retweets, follows, mentions...).
+  static Future<NotificationsResult> getNotifications({
+    int count = 40,
+    String? cursor,
+    NotificationsTimelineType timelineType = NotificationsTimelineType.all,
+  }) async {
+    _ensureAuthenticated();
+    Object? lastError;
+    for (final queryId in _gqlNotificationsTimelineQueryIds) {
+      final variables = <String, dynamic>{
+        'timeline_type': timelineType.graphqlName,
+        'count': count,
+      };
+      if (cursor != null) {
+        variables['cursor'] = cursor;
+      }
+      final uri = Uri.https('x.com', '/i/api/graphql/$queryId/NotificationsTimeline', {
+        'variables': jsonEncode(variables),
+        'features': jsonEncode(defaultFeatures),
+      });
+      try {
+        final response = await _twitterApi.client.get(uri);
+        if (response.body.isEmpty) {
+          return NotificationsResult(entries: [], cursorTop: null, cursorBottom: null);
+        }
+        final result = jsonDecode(response.body) as Map<String, dynamic>;
+        return parseNotificationsGraphqlResponse(result);
+      } catch (e) {
+        lastError = e;
+        if (e is http.Response && (e.statusCode == 404 || e.statusCode == 400)) {
+          continue;
+        }
+        rethrow;
+      }
+    }
+
+    try {
+      return await _getNotificationsRest(
+        count: count,
+        cursor: cursor,
+        timelineType: timelineType,
+      );
+    } catch (_) {
+      throw lastError ?? Exception('Failed to load notifications');
+    }
+  }
+
+  static Future<NotificationsResult> _getNotificationsRest({
+    required int count,
+    String? cursor,
+    NotificationsTimelineType timelineType = NotificationsTimelineType.all,
+  }) async {
+    final uri = Uri.https('x.com', '/i/api/2/notifications/${timelineType.restPath}.json', {
       'count': '$count',
       'include_entities': '1',
       'include_user_entities': '1',
@@ -803,11 +899,172 @@ class Twitter {
       throw response;
     }
     final result = jsonDecode(response.body) as Map<String, dynamic>;
-    return parseNotificationsResponse(result);
+    return parseNotificationsRestResponse(result);
   }
 
-  /// Parses a /2/notifications/all.json response (also used to restore cached pages).
+  static UserWithExtra? _userFromGraphqlResult(Map<String, dynamic>? result) {
+    if (result == null) {
+      return null;
+    }
+    final legacy = result['legacy'];
+    if (legacy is! Map<String, dynamic>) {
+      return null;
+    }
+    return UserWithExtra.fromJson({
+      ...legacy,
+      ...(result['core'] as Map<String, dynamic>? ?? {}),
+      'id_str': result['rest_id'] ?? result['id'],
+      'ext_is_blue_verified': result['is_blue_verified'],
+      'avatar_image_url': result['avatar']?['image_url'],
+    });
+  }
+
+  static TweetWithCard? _tweetFromGraphqlResult(dynamic tweetResults) {
+    if (tweetResults is! Map) {
+      return null;
+    }
+    final result = tweetResults['result'];
+    if (result is! Map<String, dynamic>) {
+      return null;
+    }
+    if (result['__typename'] == 'TweetTombstone') {
+      return null;
+    }
+    final tweet = result['rest_id'] == null && result['tweet'] is Map<String, dynamic>
+        ? result['tweet'] as Map<String, dynamic>
+        : result;
+    try {
+      return TweetWithCard.fromGraphqlJson(tweet);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Parses a GraphQL NotificationsTimeline response.
+  static NotificationsResult parseNotificationsGraphqlResponse(Map<String, dynamic> result) {
+    final entries = <NotificationEntry>[];
+    String? cursorTop;
+    String? cursorBottom;
+
+    final timeline = result['data']?['viewer_v2']?['user_results']?['result']?['notification_timeline'];
+    final instructions = _graphqlInstructionsFromTimeline(timeline);
+
+    for (final instruction in instructions) {
+      final type = '${instruction['type'] ?? instruction['__typename'] ?? ''}';
+      if (!type.contains('TimelineAddEntries')) {
+        continue;
+      }
+      final addEntries = instruction['entries'] as List<dynamic>? ?? [];
+      for (final entry in addEntries) {
+        if (entry is! Map<String, dynamic>) {
+          continue;
+        }
+        final entryId = entry['entryId'] as String? ?? '';
+        final sortIndex = entry['sortIndex'] as String?;
+        final content = entry['content'] as Map<String, dynamic>?;
+        if (content == null) {
+          continue;
+        }
+
+        final entryType = '${content['entryType'] ?? content['__typename'] ?? ''}';
+        if (entryType.contains('Cursor') || entryId.startsWith('cursor-')) {
+          final cursorType = content['cursorType'] as String?;
+          final value = content['value'] as String? ??
+              content['operation']?['cursor']?['value'] as String?;
+          if (value != null) {
+            if (cursorType == 'Top' || entryId.contains('cursor-top')) {
+              cursorTop = value;
+            } else if (cursorType == 'Bottom' || entryId.contains('cursor-bottom')) {
+              cursorBottom = value;
+            }
+          }
+          continue;
+        }
+
+        final itemContent = content['itemContent'] as Map<String, dynamic>?;
+        if (itemContent == null) {
+          continue;
+        }
+
+        final tweet = _tweetFromGraphqlResult(itemContent['tweet_results']);
+        if (tweet != null) {
+          entries.add(NotificationEntry(tweet: tweet, sortIndex: sortIndex));
+          continue;
+        }
+
+        final itemType = '${itemContent['itemType'] ?? itemContent['__typename'] ?? ''}';
+        if (!itemType.contains('Notification') && !itemContent.containsKey('notification_icon')) {
+          continue;
+        }
+
+        final template = itemContent['template'] as Map<String, dynamic>?;
+        final aggregate = template?['aggregateUserActionsV1'] as Map<String, dynamic>?;
+
+        final fromUsers = <UserWithExtra>[];
+        for (final fromUser in (template?['from_users'] as List<dynamic>? ??
+            aggregate?['fromUsers'] as List<dynamic>? ??
+            [])) {
+          if (fromUser is! Map) {
+            continue;
+          }
+          final userResult = fromUser['user_results']?['result'] ?? fromUser['user'];
+          final user = _userFromGraphqlResult(
+            userResult is Map<String, dynamic> ? userResult : null,
+          );
+          if (user != null) {
+            fromUsers.add(user);
+          }
+        }
+
+        TweetWithCard? targetTweet;
+        for (final target in (template?['target_objects'] as List<dynamic>? ??
+            aggregate?['targetObjects'] as List<dynamic>? ??
+            [])) {
+          if (target is! Map) {
+            continue;
+          }
+          targetTweet = _tweetFromGraphqlResult(target['tweet_results'] ?? target['tweet']);
+          if (targetTweet != null) {
+            break;
+          }
+        }
+
+        final timestampMs = int.tryParse(itemContent['timestamp_ms'] as String? ?? '');
+        entries.add(NotificationEntry(
+          notification: TwitterNotification(
+            id: itemContent['id'] as String? ?? entryId,
+            iconId: itemContent['notification_icon'] as String? ?? '',
+            text: (itemContent['rich_message'] as Map<String, dynamic>?)?['text'] as String? ?? '',
+            timestamp: timestampMs == null
+                ? null
+                : DateTime.fromMillisecondsSinceEpoch(timestampMs),
+            users: fromUsers,
+            targetTweet: targetTweet,
+            sortIndex: sortIndex,
+          ),
+          sortIndex: sortIndex,
+        ));
+      }
+    }
+
+    return NotificationsResult(
+      entries: entries,
+      cursorTop: cursorTop,
+      cursorBottom: cursorBottom,
+      raw: result,
+    );
+  }
+
+  /// Parses a notifications response (GraphQL or legacy REST; also used for cache restore).
   static NotificationsResult parseNotificationsResponse(Map<String, dynamic> result) {
+    if (result['data']?['viewer_v2'] != null) {
+      return parseNotificationsGraphqlResponse(result);
+    }
+    return parseNotificationsRestResponse(result);
+  }
+
+  /// Parses a legacy /2/notifications/all.json response.
+  static NotificationsResult parseNotificationsRestResponse(Map<String, dynamic> result) {
     final global = (result['globalObjects'] as Map<String, dynamic>?) ?? {};
     final tweets = (global['tweets'] as Map<String, dynamic>?) ?? {};
     final users = (global['users'] as Map<String, dynamic>?) ?? {};
@@ -825,6 +1082,7 @@ class Twitter {
       }
       for (final entry in addEntries) {
         final entryId = entry['entryId'] as String? ?? '';
+        final sortIndex = entry['sortIndex'] as String?;
         final content = entry['content'] as Map<String, dynamic>?;
         if (content == null) {
           continue;
@@ -849,6 +1107,7 @@ class Twitter {
         if (tweetId != null && tweets[tweetId] != null) {
           entries.add(NotificationEntry(
             tweet: TweetWithCard.fromCardJson(tweets, users, tweets[tweetId]),
+            sortIndex: sortIndex,
           ));
           continue;
         }
@@ -892,7 +1151,9 @@ class Twitter {
                 : DateTime.fromMillisecondsSinceEpoch(timestampMs),
             users: fromUsers,
             targetTweet: targetTweet,
+            sortIndex: sortIndex,
           ),
+          sortIndex: sortIndex,
         ));
       }
     }
@@ -1013,6 +1274,21 @@ class Twitter {
       targetScreenName: targetScreenName,
     );
     return rel.relationship?.source?.following ?? false;
+  }
+
+  /// Whether [target] follows the logged-in user ([sourceId]).
+  static Future<bool> isFollowedByUser({
+    required String sourceId,
+    String? targetId,
+    String? targetScreenName,
+  }) async {
+    _ensureAuthenticated();
+    final rel = await _twitterApi.userService.friendshipsShow(
+      sourceId: sourceId,
+      targetId: targetId,
+      targetScreenName: targetScreenName,
+    );
+    return rel.relationship?.target?.following ?? false;
   }
 
   static List<TweetChain> createTweetChains(List<dynamic> addEntries) {
@@ -1182,7 +1458,12 @@ class Twitter {
     return createUnconversationedChainsGraphql(timeline, 'tweet', [], includeReplies, leanerFeeds);
   }
 
-  static Future<TweetStatus> getHomeLatestTimeline({int count = 40, String? cursor}) async {
+  static Future<TweetStatus> _fetchHomeTimelineGraphql({
+    required String operationName,
+    required List<String> queryIds,
+    int count = 40,
+    String? cursor,
+  }) async {
     final variables = <String, dynamic>{
       'count': count,
       'includePromotedContent': true,
@@ -1194,30 +1475,73 @@ class Twitter {
       variables['cursor'] = cursor;
     }
 
-    final uri = Uri.https('api.x.com', graphqlHomeLatestTimelineUriPath, {
-      'variables': jsonEncode(variables),
-      'features': jsonEncode(defaultFeatures),
-    });
-
-    final response = await _twitterApi.client.get(uri);
-    if (response.body.isEmpty) {
-      throw Exception('Empty home timeline response');
+    Object? lastError;
+    for (final queryId in queryIds) {
+      for (final host in const ['x.com', 'api.x.com']) {
+        final path = host == 'x.com'
+            ? '/i/api/graphql/$queryId/$operationName'
+            : '/graphql/$queryId/$operationName';
+        final uri = Uri.https(host, path, {
+          'variables': jsonEncode(variables),
+          'features': jsonEncode(defaultFeatures),
+        });
+        try {
+          final response = await _twitterApi.client.get(uri);
+          if (response.statusCode == 404 || response.statusCode == 400) {
+            lastError = response;
+            continue;
+          }
+          if (response.body.isEmpty) {
+            lastError = Exception('Empty home timeline response');
+            continue;
+          }
+          final result = json.decode(response.body) as Map<String, dynamic>;
+          if (result['errors'] != null) {
+            lastError = Exception(result['errors'].toString());
+            continue;
+          }
+          final parsed = createHomeTimelineGraphql(result);
+          if (parsed.chains.isEmpty && cursor == null) {
+            lastError = Exception('Home timeline empty');
+            continue;
+          }
+          return parsed;
+        } catch (e) {
+          lastError = e;
+        }
+      }
     }
-    final result = json.decode(response.body) as Map<String, dynamic>;
-    final parsed = createHomeTimelineGraphql(result);
-    if (parsed.chains.isEmpty && cursor == null) {
-      throw Exception('Home timeline empty');
-    }
-    return parsed;
+    throw lastError ?? Exception('Failed to load home timeline');
   }
 
+  /// Algorithmic "For you" home feed (GraphQL HomeTimeline).
+  static Future<TweetStatus> getHomeTimelineForYou({int count = 40, String? cursor}) {
+    return _fetchHomeTimelineGraphql(
+      operationName: 'HomeTimeline',
+      queryIds: _gqlHomeTimelineQueryIds,
+      count: count,
+      cursor: cursor,
+    );
+  }
+
+  /// Chronological following feed (GraphQL HomeLatestTimeline).
+  static Future<TweetStatus> getHomeLatestTimeline({int count = 40, String? cursor}) {
+    return _fetchHomeTimelineGraphql(
+      operationName: 'HomeLatestTimeline',
+      queryIds: _gqlHomeLatestTimelineQueryIds,
+      count: count,
+      cursor: cursor,
+    );
+  }
+
+  /// Legacy following feed via search; prefer [getHomeLatestTimeline].
   static Future<TweetStatus> getHomeTimelineFromFollowing({int limit = 40, String? cursor}) async {
-    final accounts = await getAccounts();
-    if (accounts.isEmpty) {
+    final account = await getActiveAccount();
+    if (account == null) {
       return TweetStatus(chains: [], cursorBottom: null, cursorTop: null);
     }
 
-    final profile = await getProfileByScreenName(accounts.first.screenName);
+    final profile = await getProfileByScreenName(account.screenName);
     final userId = profile.user.idStr;
     if (userId == null) {
       return TweetStatus(chains: [], cursorBottom: null, cursorTop: null);
@@ -1242,20 +1566,20 @@ class Twitter {
   static Future<TweetStatus> getHomeTimeline({int count = 40, String? cursor}) async {
     if (cursor == null) {
       try {
-        final result = await getHomeLatestTimeline(count: count);
+        final result = await getHomeTimelineForYou(count: count);
         if (result.chains.isNotEmpty) {
           return result;
         }
       } on Object {
-        // Fall through to following-based feed.
+        // Fall through to following feed.
       }
-      return getHomeTimelineFromFollowing(limit: count);
+      return getHomeLatestTimeline(count: count);
     }
 
     try {
-      return await getHomeLatestTimeline(count: count, cursor: cursor);
+      return await getHomeTimelineForYou(count: count, cursor: cursor);
     } on Object {
-      return getHomeTimelineFromFollowing(limit: count, cursor: cursor);
+      return getHomeLatestTimeline(count: count, cursor: cursor);
     }
   }
 
@@ -1441,6 +1765,59 @@ class Twitter {
     String? cursorBottom = addEntries.firstWhereOrNull((entry) => entry['entryId']?.startsWith('cursor-bottom-'))?['content']?['value'];
 
     return SearchStatus(items: users, cursorBottom: cursorBottom);
+  }
+
+  /// Autocomplete suggestions while typing in the search box.
+  static Future<SearchTypeaheadResult> getSearchTypeahead(String query) async {
+    _ensureAuthenticated();
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      return SearchTypeaheadResult(users: const [], topics: const []);
+    }
+
+    final uri = Uri.https('x.com', '/i/api/1.1/search/typeahead.json', {
+      'q': trimmed,
+      'src': 'search_box',
+      'result_type': 'users,topics',
+      'include_ext_is_blue_verified': '1',
+      'include_ext_verified_type': '1',
+      'include_ext_profile_image_shape': '1',
+    });
+    final response = await TwitterAccount.fetch(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw response;
+    }
+    if (response.body.isEmpty) {
+      return SearchTypeaheadResult(users: const [], topics: const []);
+    }
+
+    final result = json.decode(response.body) as Map<String, dynamic>;
+    final users = <UserWithExtra>[];
+    for (final raw in (result['users'] as List<dynamic>? ?? [])) {
+      if (raw is! Map<String, dynamic>) {
+        continue;
+      }
+      try {
+        users.add(UserWithExtra.fromJson(raw));
+      } catch (_) {
+        // Skip malformed user entries.
+      }
+    }
+
+    final topics = <String>[];
+    final seenTopics = <String>{};
+    for (final raw in (result['topics'] as List<dynamic>? ?? [])) {
+      if (raw is! Map<String, dynamic>) {
+        continue;
+      }
+      final topic = (raw['topic'] as String? ?? '').trim();
+      if (topic.isEmpty || !seenTopics.add(topic.toLowerCase())) {
+        continue;
+      }
+      topics.add(topic);
+    }
+
+    return SearchTypeaheadResult(users: users, topics: topics);
   }
 
   static Future<List<TrendLocation>> getTrendLocations() async {
@@ -1669,9 +2046,16 @@ class Twitter {
   }
 
   static TweetStatus createHomeTimelineGraphql(Map<String, dynamic> parentResult) {
-    var instructions = _graphqlInstructionsFromTimeline(parentResult['data']?['home']?['home_timeline_urt']);
+    final home = parentResult['data']?['home'];
+    var instructions = _graphqlInstructionsFromTimeline(home?['home_timeline_urt']);
     if (instructions.isEmpty) {
-      instructions = _graphqlInstructionsFromTimeline(parentResult['data']?['home']?['home_timeline']);
+      instructions = _graphqlInstructionsFromTimeline(home?['home_timeline']);
+    }
+    if (instructions.isEmpty) {
+      instructions = _graphqlInstructionsFromTimeline(home?['home_latest_timeline_urt']);
+    }
+    if (instructions.isEmpty) {
+      instructions = _graphqlInstructionsFromTimeline(home?['home_latest_timeline']);
     }
     return _createTweetStatusFromGraphqlInstructions(instructions, const []);
   }
@@ -2042,6 +2426,8 @@ class TweetWithCard extends Tweet {
   TweetWithCard? birdwatchQuotedStatus;
   int? bookmarkCount;
   bool? bookmarked;
+  int? viewCount;
+  Map<String, String>? mediaAltTexts;
 
   TweetWithCard();
 
@@ -2053,6 +2439,8 @@ class TweetWithCard extends Tweet {
     json['quotedStatusWithCard'] = quotedStatusWithCard?.toJson();
     json['retweetedStatusWithCard'] = retweetedStatusWithCard?.toJson();
     json['isTombstone'] = isTombstone;
+    json['viewCount'] = viewCount;
+    json['mediaAltTexts'] = mediaAltTexts;
 
     return json;
   }
@@ -2096,6 +2484,11 @@ class TweetWithCard extends Tweet {
     tweetWithCard.retweeted = tweet.retweeted;
     tweetWithCard.retweetedStatus = tweet.retweetedStatus;
     tweetWithCard.retweetedStatusWithCard = e['retweetedStatusWithCard'] == null ? null : TweetWithCard.fromJson(e['retweetedStatusWithCard']);
+    tweetWithCard.viewCount = e['viewCount'] as int?;
+    final altRaw = e['mediaAltTexts'];
+    if (altRaw is Map) {
+      tweetWithCard.mediaAltTexts = altRaw.map((key, value) => MapEntry(key.toString(), value.toString()));
+    }
     tweetWithCard.source = tweet.source;
     tweetWithCard.text = tweet.text;
     tweetWithCard.user = tweet.user;
@@ -2152,7 +2545,39 @@ class TweetWithCard extends Tweet {
       var birdwatchSubtitle = TweetWithCard.rearrangeBirdwatch(result['birdwatch_pivot']['subtitle']);
       tweet.birdwatchQuotedStatus = TweetWithCard.fromJson(birdwatchSubtitle);
     }
+    final viewsRaw = result['views']?['count'];
+    if (viewsRaw != null) {
+      tweet.viewCount = int.tryParse(viewsRaw.toString());
+    }
+    tweet.mediaAltTexts = _parseMediaAltTexts(
+      result['legacy']?['extended_entities']?['media'] as List<dynamic>?,
+    );
     return tweet;
+  }
+
+  static Map<String, String> _parseMediaAltTexts(List<dynamic>? mediaList) {
+    if (mediaList == null) {
+      return {};
+    }
+    final map = <String, String>{};
+    for (final raw in mediaList) {
+      if (raw is! Map<String, dynamic>) {
+        continue;
+      }
+      final alt = raw['ext_alt_text'] as String?;
+      if (alt == null || alt.isEmpty) {
+        continue;
+      }
+      final url = raw['media_url_https'] as String? ?? raw['media_url'] as String?;
+      final id = raw['id_str'] as String?;
+      if (url != null) {
+        map[url] = alt;
+      }
+      if (id != null) {
+        map[id] = alt;
+      }
+    }
+    return map;
   }
 
   static Map<String, dynamic> rearrangeBirdwatch(Map<String, dynamic> birdwatch) {
@@ -2223,6 +2648,13 @@ class TweetWithCard extends Tweet {
     tweet.retweetCount = e['retweet_count'] as int?;
     tweet.bookmarkCount = e['bookmark_count'] as int?;
     tweet.bookmarked = e['bookmarked'] as bool?;
+    final viewsRaw = e['ext_views']?['count'] ?? e['views']?['count'];
+    if (viewsRaw != null) {
+      tweet.viewCount = int.tryParse(viewsRaw.toString());
+    }
+    tweet.mediaAltTexts = _parseMediaAltTexts(
+      e['extended_entities']?['media'] as List<dynamic>?,
+    );
     tweet.retweeted = e['retweeted'] as bool?;
     tweet.source = e['source'] as String?;
     tweet.text = e['text'] ?? e['full_text'] as String?;
@@ -2321,6 +2753,13 @@ class SearchStatus<T> {
   SearchStatus({required this.items, this.cursorBottom});
 }
 
+class SearchTypeaheadResult {
+  final List<UserWithExtra> users;
+  final List<String> topics;
+
+  SearchTypeaheadResult({required this.users, required this.topics});
+}
+
 class TwitterError {
   final String uri;
   final int code;
@@ -2364,6 +2803,25 @@ class UserListPage {
   UserListPage({required this.users, required this.nextCursor});
 }
 
+/// Notification timeline filter (matches X web tabs).
+enum NotificationsTimelineType {
+  all,
+  verified,
+  mentions;
+
+  String get graphqlName => switch (this) {
+        NotificationsTimelineType.all => 'All',
+        NotificationsTimelineType.verified => 'Verified',
+        NotificationsTimelineType.mentions => 'Mentions',
+      };
+
+  String get restPath => switch (this) {
+        NotificationsTimelineType.all => 'all',
+        NotificationsTimelineType.verified => 'verified',
+        NotificationsTimelineType.mentions => 'mentions',
+      };
+}
+
 /// An aggregated notification (likes, retweets, follows...) from the
 /// notifications timeline.
 class TwitterNotification {
@@ -2376,6 +2834,9 @@ class TwitterNotification {
   final List<UserWithExtra> users;
   final TweetWithCard? targetTweet;
 
+  /// Snowflake-style sort index for unread tracking.
+  final String? sortIndex;
+
   TwitterNotification({
     required this.id,
     required this.iconId,
@@ -2383,6 +2844,7 @@ class TwitterNotification {
     required this.timestamp,
     required this.users,
     required this.targetTweet,
+    this.sortIndex,
   });
 }
 
@@ -2392,7 +2854,10 @@ class NotificationEntry {
   final TwitterNotification? notification;
   final TweetWithCard? tweet;
 
-  NotificationEntry({this.notification, this.tweet});
+  /// Snowflake-style sort index for unread tracking.
+  final String? sortIndex;
+
+  NotificationEntry({this.notification, this.tweet, this.sortIndex});
 }
 
 class NotificationsResult {

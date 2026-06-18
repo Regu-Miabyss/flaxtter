@@ -8,6 +8,9 @@ class UserWithExtra extends User {
   bool? muting;
   bool? blocking;
 
+  /// Whether this user follows the logged-in account.
+  bool? followedBy;
+
   UserWithExtra();
 
   @override
@@ -50,6 +53,7 @@ class UserWithExtra extends User {
     userWithExtra.possiblySensitive = json['possibly_sensitive'] as bool?;
     userWithExtra.muting = json['muting'] as bool?;
     userWithExtra.blocking = json['blocking'] as bool?;
+    userWithExtra.followedBy = json['followed_by'] as bool?;
     return userWithExtra;
   }
 }

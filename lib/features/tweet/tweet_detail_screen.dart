@@ -9,6 +9,7 @@ import 'package:flaxtter/utils/notifiers.dart';
 import 'package:flaxtter/utils/tweet_manage.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
 import 'package:flaxtter/widgets/tweet_compose_sheet.dart';
+import 'package:flaxtter/widgets/tweet_loading_skeleton.dart';
 import 'package:flaxtter/widgets/tweet_tile.dart';
 import 'package:flaxtter/utils/media_actions.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
@@ -257,7 +258,7 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
         appBar: AppBar(title: Text(l10n.tweetDetail)),
         body: PullToRefreshPlaceholder(
           onRefresh: _refreshAll,
-          child: const Center(child: CircularProgressIndicator()),
+          child: const TweetLoadingSkeleton(itemCount: 4),
         ),
       );
     }

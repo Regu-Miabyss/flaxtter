@@ -159,6 +159,12 @@ abstract class AppLocalizations {
   /// **'Search tweets, or @username'**
   String get searchTweetsHint;
 
+  /// No description provided for @searchForQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for {query}'**
+  String searchForQuery(String query);
+
   /// No description provided for @noResults.
   ///
   /// In en, this message translates to:
@@ -777,6 +783,18 @@ abstract class AppLocalizations {
   /// **'Block @{screenName}? They will not be able to follow you or view your posts.'**
   String confirmBlock(String screenName);
 
+  /// No description provided for @followsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows you'**
+  String get followsYou;
+
+  /// No description provided for @confirmUnfollow.
+  ///
+  /// In en, this message translates to:
+  /// **'Unfollow @{screenName}?'**
+  String confirmUnfollow(String screenName);
+
   /// No description provided for @notifications.
   ///
   /// In en, this message translates to:
@@ -878,6 +896,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Mentions & replies'**
   String get notifMentions;
+
+  /// No description provided for @notifTabAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notifTabAll;
+
+  /// No description provided for @notifTabMentions.
+  ///
+  /// In en, this message translates to:
+  /// **'Mentions'**
+  String get notifTabMentions;
+
+  /// No description provided for @notifTabVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'Verified'**
+  String get notifTabVerified;
 
   /// No description provided for @notifOther.
   ///
@@ -1071,6 +1107,36 @@ abstract class AppLocalizations {
   /// **'Restore default font'**
   String get restoreDefaultFont;
 
+  /// No description provided for @invalidFontFile.
+  ///
+  /// In en, this message translates to:
+  /// **'The selected file is not a valid font.'**
+  String get invalidFontFile;
+
+  /// No description provided for @customFontRestartRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom font saved. Restart the app to apply it everywhere.'**
+  String get customFontRestartRequired;
+
+  /// No description provided for @restartLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart later'**
+  String get restartLater;
+
+  /// No description provided for @restartNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart now'**
+  String get restartNow;
+
+  /// No description provided for @reselectFont.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose again'**
+  String get reselectFont;
+
   /// No description provided for @saveVideo.
   ///
   /// In en, this message translates to:
@@ -1100,6 +1166,114 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Landscape'**
   String get landscapeMode;
+
+  /// No description provided for @timelineForYou.
+  ///
+  /// In en, this message translates to:
+  /// **'For you'**
+  String get timelineForYou;
+
+  /// No description provided for @timelineFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'Following'**
+  String get timelineFollowing;
+
+  /// No description provided for @pinnedTweet.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinnedTweet;
+
+  /// No description provided for @joinedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined {date}'**
+  String joinedDate(String date);
+
+  /// No description provided for @trendsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Trends location'**
+  String get trendsLocation;
+
+  /// No description provided for @selectTrendsLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Select location'**
+  String get selectTrendsLocation;
+
+  /// No description provided for @searchTrendsLocationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search locations'**
+  String get searchTrendsLocationHint;
+
+  /// No description provided for @noTrendsLocationMatches.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching locations'**
+  String get noTrendsLocationMatches;
+
+  /// No description provided for @trendsWorldwide.
+  ///
+  /// In en, this message translates to:
+  /// **'Worldwide'**
+  String get trendsWorldwide;
+
+  /// No description provided for @searchUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users'**
+  String get searchUsers;
+
+  /// No description provided for @searchUsersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search for people'**
+  String get searchUsersHint;
+
+  /// No description provided for @noUsersFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No users found'**
+  String get noUsersFound;
+
+  /// No description provided for @textSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get textSize;
+
+  /// No description provided for @textSizeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust display text size'**
+  String get textSizeHint;
+
+  /// No description provided for @switchAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch account'**
+  String get switchAccount;
+
+  /// No description provided for @switchAccountHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose which logged-in account to use'**
+  String get switchAccountHint;
+
+  /// No description provided for @altText.
+  ///
+  /// In en, this message translates to:
+  /// **'Alt text'**
+  String get altText;
+
+  /// No description provided for @viewCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} views'**
+  String viewCount(String count);
 }
 
 class _AppLocalizationsDelegate

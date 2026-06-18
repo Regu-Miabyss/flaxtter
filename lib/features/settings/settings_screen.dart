@@ -2,7 +2,9 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flaxtter/client/client_account.dart';
 import 'package:flaxtter/features/settings/user_list_screen.dart';
+import 'package:flaxtter/features/settings/account_switcher_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
+import 'package:flaxtter/utils/app_rebirth.dart';
 import 'package:flaxtter/utils/app_settings.dart';
 import 'package:flaxtter/utils/json_cache.dart';
 import 'package:flaxtter/utils/media_actions.dart';
@@ -59,6 +61,13 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
         children: [
+          _SettingsNavTile(
+            icon: Icons.switch_account,
+            iconColor: Colors.cyan,
+            title: l10n.switchAccount,
+            subtitle: l10n.switchAccountHint,
+            onTap: () => _push(context, const AccountSwitcherScreen()),
+          ),
           _SettingsNavTile(
             icon: Icons.palette_outlined,
             iconColor: Colors.deepPurple,
@@ -270,14 +279,72 @@ class AppearanceSettingsScreen extends StatelessWidget {
     if (file == null) {
       return;
     }
+
+    final bytes = await file.readAsBytes();
+    if (!context.mounted) {
+      return;
+    }
+
+    final valid = await AppSettings.validateFontBytes(bytes);
+    if (!context.mounted) {
+      return;
+    }
+
+    if (!valid) {
+      final retry = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          content: Text(l10n.invalidFontFile),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l10n.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(l10n.reselectFont),
+            ),
+          ],
+        ),
+      );
+      if (retry == true && context.mounted) {
+        await _pickFont(context, settings);
+      }
+      return;
+    }
+
     try {
-      final bytes = await file.readAsBytes();
       await settings.setCustomFontBytes(bytes, file.name);
     } catch (e) {
       if (context.mounted) {
         await showMediaActionSnackBar(context, l10n.actionFailed(e.toString()));
       }
+      return;
     }
+
+    if (!context.mounted) {
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        content: Text(l10n.customFontRestartRequired),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.restartLater),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(context);
+              AppRebirth.restartApp(context);
+            },
+            child: Text(l10n.restartNow),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -349,6 +416,30 @@ class GeneralSettingsScreen extends StatelessWidget {
             title: Text(l10n.saveSearchHistorySetting),
             value: settings.saveSearchHistory,
             onChanged: (value) => settings.saveSearchHistory = value,
+          ),
+          ListTile(
+            leading: const Icon(Icons.format_size),
+            title: Text(l10n.textSize),
+            subtitle: Text(l10n.textSizeHint),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                const Text('A'),
+                Expanded(
+                  child: Slider(
+                    min: 0.85,
+                    max: 1.35,
+                    divisions: 10,
+                    value: settings.textScale,
+                    label: '${(settings.textScale * 100).round()}%',
+                    onChanged: (value) => settings.textScale = value,
+                  ),
+                ),
+                const Text('A', style: TextStyle(fontSize: 20)),
+              ],
+            ),
           ),
         ],
       ),

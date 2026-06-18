@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -118,6 +119,13 @@ class _TweetComposeSheetState extends State<_TweetComposeSheet> {
     return hasText || widget.mode == TweetComposeMode.quote;
   }
 
+  bool get _isDesktop =>
+      Platform.isLinux || Platform.isWindows || Platform.isMacOS;
+
+  bool get _compactHeight =>
+      widget.mode == TweetComposeMode.newTweet ||
+      widget.mode == TweetComposeMode.reply;
+
   bool get _canAddImages =>
       widget.mode == TweetComposeMode.newTweet &&
       !_posting &&
@@ -233,13 +241,24 @@ class _TweetComposeSheetState extends State<_TweetComposeSheet> {
       TweetComposeMode.newTweet => l10n.newTweetHint,
     };
 
+    final minLines = switch (widget.mode) {
+      TweetComposeMode.quote => 2,
+      TweetComposeMode.newTweet => _isDesktop ? 2 : 3,
+      TweetComposeMode.reply => _isDesktop ? 2 : 3,
+    };
+    final maxLines = switch (widget.mode) {
+      TweetComposeMode.quote => 4,
+      TweetComposeMode.newTweet => _isDesktop ? 6 : 8,
+      TweetComposeMode.reply => _isDesktop ? 6 : 8,
+    };
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: TextField(
         controller: _controller,
         autofocus: true,
-        maxLines: widget.mode == TweetComposeMode.quote ? 4 : 6,
-        minLines: widget.mode == TweetComposeMode.quote ? 2 : 3,
+        maxLines: maxLines,
+        minLines: minLines,
         maxLength: _maxLength,
         decoration: InputDecoration(
           hintText: hint,
@@ -348,65 +367,71 @@ class _TweetComposeSheetState extends State<_TweetComposeSheet> {
       TweetComposeMode.newTweet => l10n.composeTweet,
     };
     final maxHeight = MediaQuery.sizeOf(context).height * 0.9;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: maxHeight),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-              child: Row(
-                children: [
-                  TextButton(
-                    onPressed: _posting ? null : () => Navigator.pop(context),
-                    child: Text(l10n.cancel),
-                  ),
-                  Expanded(
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                  ),
-                  FilledButton(
-                    onPressed: _canPost ? _post : null,
-                    child: _posting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Text(l10n.post),
-                  ),
-                ],
+    final sheetBody = Column(
+      mainAxisSize: _compactHeight ? MainAxisSize.min : MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+          child: Row(
+            children: [
+              TextButton(
+                onPressed: _posting ? null : () => Navigator.pop(context),
+                child: Text(l10n.cancel),
               ),
-            ),
-            _buildTextField(l10n),
-            if (widget.mode == TweetComposeMode.newTweet) ...[
-              _buildImagePreview(),
-              _buildComposeToolbar(l10n),
-            ],
-            if (widget.mode == TweetComposeMode.quote && tweet != null) ...[
-              const Divider(height: 1),
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                  child: TweetContent(
-                    tweet: tweet,
-                    nested: true,
-                    onMentionTap: (_) {},
-                    onHashtagTap: (_) {},
-                  ),
+              Expanded(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleSmall,
                 ),
               ),
-            ] else
-              const Padding(padding: EdgeInsets.only(bottom: 8)),
-          ],
+              FilledButton(
+                onPressed: _canPost ? _post : null,
+                child: _posting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(l10n.post),
+              ),
+            ],
+          ),
         ),
-      ),
+        _buildTextField(l10n),
+        if (widget.mode == TweetComposeMode.newTweet) ...[
+          _buildImagePreview(),
+          _buildComposeToolbar(l10n),
+        ],
+        if (widget.mode == TweetComposeMode.quote && tweet != null) ...[
+          const Divider(height: 1),
+          Flexible(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+              child: TweetContent(
+                tweet: tweet,
+                nested: true,
+                onMentionTap: (_) {},
+                onHashtagTap: (_) {},
+              ),
+            ),
+          ),
+        ] else
+          const SizedBox(height: 8),
+      ],
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: _compactHeight
+          ? sheetBody
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: sheetBody,
+            ),
     );
   }
 }

@@ -1,6 +1,8 @@
 import 'package:dart_twitter_api/twitter_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flaxtter/client/client.dart';
+import 'package:flaxtter/features/search/search_compose_screen.dart';
+import 'package:flaxtter/features/search/user_search_screen.dart';
 import 'package:flaxtter/features/profile/profile_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/app_settings.dart';
@@ -15,8 +17,8 @@ import 'package:flaxtter/widgets/tweet_tile.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-/// Worldwide WOEID — same default as Squawker.
-const _defaultTrendsWoeid = 1;
+/// Worldwide WOEID fallback when no location is stored yet.
+const _fallbackTrendsWoeid = 1;
 
 enum _SearchResultMode { latest, top }
 
@@ -41,7 +43,8 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   List<Trend>? _trends;
   Object? _trendsError;
   bool _trendsLoading = false;
-  List<String> _searchHistory = const [];
+  int? _loadedTrendsWoeid;
+  String? _trendsLocationName;
 
   late final TweetActionNotifier _tweetActions;
 
@@ -55,14 +58,6 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     context.read<SearchRequestNotifier>().addListener(_consumePendingSearch);
     _tweetActions = context.read<TweetActionNotifier>();
     _tweetActions.addListener(_onTweetAction);
-    _loadSearchHistory();
-  }
-
-  Future<void> _loadSearchHistory() async {
-    final history = await getSearchHistory();
-    if (mounted) {
-      setState(() => _searchHistory = history);
-    }
   }
 
   Future<void> _saveToHistory(String query) async {
@@ -70,22 +65,16 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
       return;
     }
     await addSearchHistory(query);
-    await _loadSearchHistory();
   }
 
-  Future<void> _removeFromHistory(String query) async {
-    await removeSearchHistory(query);
-    await _loadSearchHistory();
-  }
-
-  Future<void> _clearHistory() async {
-    await clearSearchHistory();
-    if (mounted) {
-      setState(() => _searchHistory = const []);
+  Future<void> _openSearchCompose() async {
+    final query = await SearchComposeScreen.open(
+      context,
+      initialQuery: _activeQuery ?? _queryController.text,
+    );
+    if (!mounted || query == null) {
+      return;
     }
-  }
-
-  Future<void> _searchFromHistory(String query) async {
     _queryController.text = query;
     await _search();
   }
@@ -165,17 +154,19 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
     if (_trendsLoading) {
       return;
     }
+    final woeid = context.read<AppSettings>().trendsWoeid;
     setState(() {
       _trendsLoading = true;
       _trendsError = null;
     });
 
     try {
-      final groups = await Twitter.getTrends(_defaultTrendsWoeid);
+      final groups = await Twitter.getTrends(woeid);
       if (!mounted) {
         return;
       }
       setState(() {
+        _loadedTrendsWoeid = woeid;
         _trends = groups.isEmpty ? const [] : (groups.first.trends ?? const []);
         _trendsLoading = false;
       });
@@ -187,6 +178,42 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         _trendsError = e;
         _trendsLoading = false;
       });
+    }
+  }
+
+  Future<void> _pickTrendsLocation() async {
+    final l10n = AppLocalizations.of(context);
+    final settings = context.read<AppSettings>();
+    try {
+      final locations = await Twitter.getTrendLocations();
+      if (!mounted) {
+        return;
+      }
+      final selected = await showModalBottomSheet<TrendLocation>(
+        context: context,
+        showDragHandle: true,
+        isScrollControlled: true,
+        builder: (context) => _TrendsLocationPickerSheet(
+          locations: locations,
+          selectedWoeid: settings.trendsWoeid,
+        ),
+      );
+      if (selected?.woeid == null || !mounted) {
+        return;
+      }
+      settings.trendsWoeid = selected!.woeid!;
+      setState(() {
+        _trendsLocationName = selected.name;
+        _trends = null;
+        _trendsError = null;
+      });
+      await _loadTrends();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.loadFailed(e.toString()))),
+        );
+      }
     }
   }
 
@@ -324,6 +351,10 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final settings = context.watch<AppSettings>();
+    if (_loadedTrendsWoeid != settings.trendsWoeid && _activeQuery == null && !_trendsLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadTrends());
+    }
 
     return Column(
       children: [
@@ -333,17 +364,27 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
             children: [
               Expanded(
                 child: TextField(
+                  readOnly: true,
                   controller: _queryController,
+                  onTap: _openSearchCompose,
                   decoration: InputDecoration(
                     hintText: l10n.searchTweetsHint,
                     border: const OutlineInputBorder(),
                     isDense: true,
+                    prefixIcon: const Icon(Icons.search),
                   ),
-                  onSubmitted: (_) => _search(),
                 ),
               ),
               const SizedBox(width: 8),
-              IconButton(onPressed: _search, icon: const Icon(Icons.search)),
+              IconButton(
+                tooltip: l10n.searchUsers,
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const UserSearchScreen()),
+                ),
+                icon: const Icon(Icons.person_search),
+              ),
+              IconButton(onPressed: _openSearchCompose, icon: const Icon(Icons.search)),
             ],
           ),
         ),
@@ -358,27 +399,15 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
         ],
         Expanded(
           child: _activeQuery == null
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (_searchHistory.isNotEmpty &&
-                        context.watch<AppSettings>().saveSearchHistory)
-                      _SearchHistoryPanel(
-                        history: _searchHistory,
-                        onQueryTap: _searchFromHistory,
-                        onQueryRemove: _removeFromHistory,
-                        onClear: _clearHistory,
-                      ),
-                    Expanded(
-                      child: _SearchTrendsPanel(
-                        loading: _trendsLoading,
-                        error: _trendsError,
-                        trends: _trends,
-                        onRefresh: _loadTrends,
-                        onTrendTap: _searchFromTrend,
-                      ),
-                    ),
-                  ],
+              ? _SearchTrendsPanel(
+                  loading: _trendsLoading,
+                  error: _trendsError,
+                  trends: _trends,
+                  locationName: _trendsLocationName ??
+                      (settings.trendsWoeid == _fallbackTrendsWoeid ? l10n.trendsWorldwide : null),
+                  onPickLocation: _pickTrendsLocation,
+                  onRefresh: _loadTrends,
+                  onTrendTap: _searchFromTrend,
                 )
               : PullToRefresh(
                   onRefresh: _refreshResults,
@@ -410,69 +439,12 @@ class _SearchScreenState extends State<SearchScreen> with SingleTickerProviderSt
   }
 }
 
-class _SearchHistoryPanel extends StatelessWidget {
-  final List<String> history;
-  final void Function(String query) onQueryTap;
-  final void Function(String query) onQueryRemove;
-  final VoidCallback onClear;
-
-  const _SearchHistoryPanel({
-    required this.history,
-    required this.onQueryTap,
-    required this.onQueryRemove,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 8, 0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.recentSearches,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ),
-              TextButton(
-                onPressed: onClear,
-                child: Text(l10n.clearAll),
-              ),
-            ],
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              for (final query in history)
-                InputChip(
-                  label: Text(query, overflow: TextOverflow.ellipsis),
-                  onPressed: () => onQueryTap(query),
-                  onDeleted: () => onQueryRemove(query),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Divider(height: 1),
-      ],
-    );
-  }
-}
-
 class _SearchTrendsPanel extends StatelessWidget {
   final bool loading;
   final Object? error;
   final List<Trend>? trends;
+  final String? locationName;
+  final VoidCallback onPickLocation;
   final Future<void> Function() onRefresh;
   final Future<void> Function(Trend trend) onTrendTap;
 
@@ -480,6 +452,8 @@ class _SearchTrendsPanel extends StatelessWidget {
     required this.loading,
     required this.error,
     required this.trends,
+    required this.locationName,
+    required this.onPickLocation,
     required this.onRefresh,
     required this.onTrendTap,
   });
@@ -524,12 +498,12 @@ class _SearchTrendsPanel extends StatelessWidget {
         itemCount: items.length + 1,
         itemBuilder: (context, index) {
           if (index == 0) {
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              child: Text(
-                l10n.trendingTopics,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
+            return ListTile(
+              leading: const Icon(Icons.public),
+              title: Text(l10n.trendsLocation),
+              subtitle: locationName != null ? Text(locationName!) : null,
+              trailing: const Icon(Icons.chevron_right),
+              onTap: onPickLocation,
             );
           }
 
@@ -545,6 +519,101 @@ class _SearchTrendsPanel extends StatelessWidget {
             onTap: () => onTrendTap(trend),
           );
         },
+      ),
+    );
+  }
+}
+
+class _TrendsLocationPickerSheet extends StatefulWidget {
+  final List<TrendLocation> locations;
+  final int selectedWoeid;
+
+  const _TrendsLocationPickerSheet({
+    required this.locations,
+    required this.selectedWoeid,
+  });
+
+  @override
+  State<_TrendsLocationPickerSheet> createState() => _TrendsLocationPickerSheetState();
+}
+
+class _TrendsLocationPickerSheetState extends State<_TrendsLocationPickerSheet> {
+  final _queryController = TextEditingController();
+  final _listScrollController = ScrollController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _queryController.dispose();
+    _listScrollController.dispose();
+    super.dispose();
+  }
+
+  List<TrendLocation> get _filtered {
+    final needle = _query.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return widget.locations;
+    }
+    return widget.locations.where((location) {
+      final name = (location.name ?? '').toLowerCase();
+      final country = (location.country ?? '').toLowerCase();
+      return name.contains(needle) || country.contains(needle);
+    }).toList(growable: false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final filtered = _filtered;
+
+    return DraggableScrollableSheet(
+      expand: false,
+      initialChildSize: 0.6,
+      minChildSize: 0.35,
+      maxChildSize: 0.9,
+      builder: (context, sheetScrollController) => Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(l10n.selectTrendsLocation, style: Theme.of(context).textTheme.titleMedium),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              controller: _queryController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l10n.searchTrendsLocationHint,
+                prefixIcon: const Icon(Icons.search),
+                isDense: true,
+                border: const OutlineInputBorder(),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+          ),
+          Expanded(
+            child: filtered.isEmpty
+                ? Center(child: Text(l10n.noTrendsLocationMatches))
+                : ListView.builder(
+                    controller: _listScrollController,
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      final location = filtered[index];
+                      final woeid = location.woeid;
+                      if (woeid == null) {
+                        return const SizedBox.shrink();
+                      }
+                      final selectedNow = widget.selectedWoeid == woeid;
+                      return ListTile(
+                        title: Text(location.name ?? ''),
+                        subtitle: location.country != null ? Text(location.country!) : null,
+                        trailing: selectedNow ? const Icon(Icons.check) : null,
+                        onTap: () => Navigator.pop(context, location),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }

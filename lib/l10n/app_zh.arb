@@ -10,6 +10,7 @@
   "me": "我",
   "user": "用戶",
   "searchTweetsHint": "搜索推文，或输入 @用户名",
+  "searchForQuery": "搜索「{query}」",
   "noResults": "暫無結果",
   "retry": "重試",
   "scrollToRetryLoading": "加载失败，继续下滑或点击重试。",
@@ -207,6 +208,15 @@
       }
     }
   },
+  "followsYou": "跟随你",
+  "confirmUnfollow": "取消关注 @{screenName}？",
+  "@confirmUnfollow": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
   "notifications": "通知",
   "noNotifications": "暂无通知",
   "pollVotes": "{count} 票",
@@ -231,6 +241,9 @@
   "notifRetweets": "转推",
   "notifFollows": "新粉丝",
   "notifMentions": "提及与回复",
+  "notifTabAll": "全部",
+  "notifTabMentions": "提及",
+  "notifTabVerified": "认证",
   "notifOther": "其他",
   "mutedUsers": "静音列表",
   "blockedUsers": "屏蔽列表",
@@ -263,6 +276,11 @@
   "customFont": "自定义字体",
   "customFontDefault": "默认字体（点按选择本地 .ttf / .otf 文件）",
   "restoreDefaultFont": "恢复默认字体",
+  "invalidFontFile": "所选文件不是有效的字体文件。",
+  "customFontRestartRequired": "自定义字体已保存，需要重启应用后才会全面生效。",
+  "restartLater": "稍后重启",
+  "restartNow": "现在重启",
+  "reselectFont": "重新选择",
   "saveVideo": "保存视频",
   "videoSaved": "已保存至 {path}",
   "@videoSaved": {
@@ -274,5 +292,37 @@
   },
   "playbackSpeed": "播放速度",
   "portraitMode": "竖屏",
-  "landscapeMode": "横屏"
+  "landscapeMode": "横屏",
+  "timelineForYou": "推荐",
+  "timelineFollowing": "正在关注",
+  "pinnedTweet": "置顶",
+  "joinedDate": "{date} 加入",
+  "@joinedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trendsLocation": "趋势地区",
+  "selectTrendsLocation": "选择地区",
+  "searchTrendsLocationHint": "搜索地区",
+  "noTrendsLocationMatches": "没有匹配的地区",
+  "trendsWorldwide": "全球",
+  "searchUsers": "搜索用户",
+  "searchUsersHint": "搜索用户",
+  "noUsersFound": "未找到用户",
+  "textSize": "字号",
+  "textSizeHint": "调整界面文字大小",
+  "switchAccount": "切换账号",
+  "switchAccountHint": "选择当前使用的登录账号",
+  "altText": "替代文字",
+  "viewCount": "{count} 次浏览",
+  "@viewCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

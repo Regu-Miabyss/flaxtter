@@ -29,6 +29,9 @@ enum MediaQuality { small, medium, large }
 /// App display language; [system] follows the OS locale.
 enum AppLanguage { system, zhHans, zhHant, en }
 
+/// Home timeline source.
+enum HomeTimelineMode { forYou, following }
+
 class AppSettings extends ChangeNotifier {
   static const _keyThemeMode = 'theme_mode';
   static const _keyDynamicColor = 'dynamic_color';
@@ -44,6 +47,9 @@ class AppSettings extends ChangeNotifier {
   static const _keySaveSearchHistory = 'save_search_history';
   static const _keyMarkMediaSensitive = 'mark_media_sensitive';
   static const _keyCustomFontPath = 'custom_font_path';
+  static const _keyHomeTimelineMode = 'home_timeline_mode';
+  static const _keyTextScale = 'text_scale';
+  static const _keyTrendsWoeid = 'trends_woeid';
 
   SharedPreferences? _prefs;
 
@@ -61,6 +67,9 @@ class AppSettings extends ChangeNotifier {
   bool _saveSearchHistory = true;
   bool _markMediaSensitive = false;
   String? _customFontPath;
+  HomeTimelineMode _homeTimelineMode = HomeTimelineMode.forYou;
+  double _textScale = 1.0;
+  int _trendsWoeid = 1;
 
   /// Runtime family name of the loaded custom font (null = bundled default).
   String? _customFontFamily;
@@ -81,6 +90,9 @@ class AppSettings extends ChangeNotifier {
   bool get markMediaSensitive => _markMediaSensitive;
   String? get customFontPath => _customFontPath;
   String? get customFontFamily => _customFontFamily;
+  HomeTimelineMode get homeTimelineMode => _homeTimelineMode;
+  double get textScale => _textScale;
+  int get trendsWoeid => _trendsWoeid;
 
   Locale? get locale => switch (_language) {
         AppLanguage.system => null,
@@ -123,6 +135,13 @@ class AppSettings extends ChangeNotifier {
     _saveSearchHistory = prefs.getBool(_keySaveSearchHistory) ?? true;
     _markMediaSensitive = prefs.getBool(_keyMarkMediaSensitive) ?? false;
     _customFontPath = prefs.getString(_keyCustomFontPath);
+    final timelineModeName = prefs.getString(_keyHomeTimelineMode);
+    _homeTimelineMode = HomeTimelineMode.values.firstWhere(
+      (mode) => mode.name == timelineModeName,
+      orElse: () => HomeTimelineMode.forYou,
+    );
+    _textScale = prefs.getDouble(_keyTextScale) ?? 1.0;
+    _trendsWoeid = prefs.getInt(_keyTrendsWoeid) ?? 1;
   }
 
   set themeMode(ThemeMode value) {
@@ -254,6 +273,22 @@ class AppSettings extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Returns true when [bytes] can be loaded as a font file.
+  static Future<bool> validateFontBytes(Uint8List bytes) async {
+    if (bytes.isEmpty) {
+      return false;
+    }
+    try {
+      final family = 'FontValidate_${DateTime.now().microsecondsSinceEpoch}';
+      final loader = FontLoader(family)
+        ..addFont(Future.value(ByteData.view(bytes.buffer)));
+      await loader.load();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Loads the persisted custom font, if any. Call once at startup.
   Future<void> loadCustomFont() async {
     final path = _customFontPath;
@@ -300,6 +335,34 @@ class AppSettings extends ChangeNotifier {
     _customFontPath = newPath;
     _customFontFamily = family;
     await _prefs?.setString(_keyCustomFontPath, newPath);
+    notifyListeners();
+  }
+
+  set homeTimelineMode(HomeTimelineMode value) {
+    if (_homeTimelineMode == value) {
+      return;
+    }
+    _homeTimelineMode = value;
+    _prefs?.setString(_keyHomeTimelineMode, value.name);
+    notifyListeners();
+  }
+
+  set textScale(double value) {
+    final clamped = value.clamp(0.85, 1.35);
+    if (_textScale == clamped) {
+      return;
+    }
+    _textScale = clamped;
+    _prefs?.setDouble(_keyTextScale, clamped);
+    notifyListeners();
+  }
+
+  set trendsWoeid(int value) {
+    if (_trendsWoeid == value) {
+      return;
+    }
+    _trendsWoeid = value;
+    _prefs?.setInt(_keyTrendsWoeid, value);
     notifyListeners();
   }
 

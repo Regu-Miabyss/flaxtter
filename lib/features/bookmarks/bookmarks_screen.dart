@@ -10,6 +10,8 @@ import 'package:flaxtter/widgets/flaxtter_paged_list_view.dart';
 import 'package:flaxtter/widgets/paged_list_delegates.dart';
 import 'package:flaxtter/widgets/pull_to_refresh.dart';
 import 'package:flaxtter/widgets/scroll_to_top_fab.dart';
+import 'package:flaxtter/widgets/fade_content_swap.dart';
+import 'package:flaxtter/widgets/tweet_loading_skeleton.dart';
 import 'package:flaxtter/widgets/tweet_tile.dart';
 import 'package:provider/provider.dart';
 
@@ -23,6 +25,8 @@ class BookmarksScreen extends StatefulWidget {
 class _BookmarksScreenState extends State<BookmarksScreen> {
   CursorPagingState<int, TweetWithCard, String> _pagingState = CursorPagingState();
   bool _initialized = false;
+  Future<void>? _replaceFirstPageTask;
+  int _contentGeneration = 0;
   final ScrollController _scrollController = ScrollController();
   final _scrollAction = ScrollToTopRefreshController();
   late final TweetActionNotifier _tweetActions;
@@ -99,9 +103,50 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
     }
   }
 
+  Future<void> _replaceFirstPage({required bool animate}) {
+    return _replaceFirstPageTask ??= _replaceFirstPageImpl(animate: animate).whenComplete(() {
+      _replaceFirstPageTask = null;
+    });
+  }
+
+  Future<void> _replaceFirstPageImpl({required bool animate}) async {
+    try {
+      final result = await Twitter.getBookmarks();
+      if (!mounted) {
+        return;
+      }
+      final tweets = result.chains.expand((chain) => chain.tweets).toList();
+      if (tweets.isEmpty) {
+        return;
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        if (animate) {
+          _contentGeneration++;
+        }
+        _pagingState = _pagingState.copyWithEx(
+          isLoading: false,
+          error: null,
+          pages: [tweets],
+          keys: [0],
+          cursor: result.cursorBottom,
+          hasNextPage: result.cursorBottom != null,
+          consecutiveLoadMoreFailures: 0,
+        );
+      });
+    } catch (_) {
+      // Keep showing existing content.
+    }
+  }
+
   Future<void> _refresh() async {
-    setState(() => _pagingState = _pagingState.resetEx());
-    await _fetchNextPage();
+    if (!_pagingState.hasLoadedPages) {
+      await _fetchNextPage();
+      return;
+    }
+    await _replaceFirstPage(animate: true);
   }
 
   void _openProfile(String? screenName) {
@@ -124,7 +169,7 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
     if (!_initialized && _pagingState.isLoading) {
       body = PullToRefreshPlaceholder(
         onRefresh: _refresh,
-        child: const Center(child: CircularProgressIndicator()),
+        child: const TweetLoadingSkeleton(),
       );
     } else {
       body = Stack(
@@ -132,19 +177,22 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
         children: [
           PullToRefresh(
             onRefresh: _refresh,
-            child: FlaxtterPagedListView<int, TweetWithCard>(
-              state: _pagingState,
-              fetchNextPage: _fetchNextPage,
-              scrollController: _scrollController,
-              builderDelegate: flaxtterPagedDelegate(
-                l10n: l10n,
+            child: FadeContentSwap(
+              contentKey: _contentGeneration,
+              child: FlaxtterPagedListView<int, TweetWithCard>(
+                state: _pagingState,
                 fetchNextPage: _fetchNextPage,
-                firstPageError: _pagingState.error,
-                resetAndRetry: _refresh,
-                noItemsMessage: l10n.noBookmarks,
-                itemBuilder: (context, tweet, index) => TweetTile(
-                  tweet: tweet,
-                  onMentionTap: _openProfileNamed,
+                scrollController: _scrollController,
+                builderDelegate: flaxtterPagedDelegate(
+                  l10n: l10n,
+                  fetchNextPage: _fetchNextPage,
+                  firstPageError: _pagingState.error,
+                  resetAndRetry: _refresh,
+                  noItemsMessage: l10n.noBookmarks,
+                  itemBuilder: (context, tweet, index) => TweetTile(
+                    tweet: tweet,
+                    onMentionTap: _openProfileNamed,
+                  ),
                 ),
               ),
             ),

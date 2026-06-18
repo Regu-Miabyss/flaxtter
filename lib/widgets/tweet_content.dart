@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flaxtter/client/client.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
+import 'package:flaxtter/models/user.dart';
 import 'package:flaxtter/utils/app_fonts.dart';
 import 'package:flaxtter/utils/interactive_content.dart';
 import 'package:flaxtter/utils/time_format.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
+import 'package:flaxtter/widgets/follows_you_badge.dart';
+import 'package:flaxtter/widgets/verified_badge.dart';
 import 'package:flaxtter/widgets/linkable_rich_text.dart';
 import 'package:flaxtter/widgets/tweet_media_gallery.dart';
 import 'package:flaxtter/widgets/tweet_poll.dart';
@@ -93,14 +96,28 @@ class TweetContent extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          user?.name ?? 'Unknown',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: nested ? 14 : null,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                user?.name ?? 'Unknown',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: nested ? 14 : null,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (user?.verified == true) ...[
+                              const SizedBox(width: 4),
+                              VerifiedBadge(size: nested ? 14 : 16),
+                            ],
+                            if (user is UserWithExtra && user.followedBy == true) ...[
+                              const SizedBox(width: 6),
+                              const FollowsYouBadge(),
+                            ],
+                          ],
                         ),
                         Text(
                           '@${user?.screenName ?? 'unknown'}',

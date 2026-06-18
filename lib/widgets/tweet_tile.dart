@@ -8,6 +8,7 @@ import 'package:flaxtter/utils/tweet_manage.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
 import 'package:flaxtter/widgets/tweet_action_bar.dart';
 import 'package:flaxtter/widgets/tweet_content.dart';
+import 'package:intl/intl.dart';
 
 class TweetTile extends StatefulWidget {
   final TweetWithCard tweet;
@@ -19,6 +20,7 @@ class TweetTile extends StatefulWidget {
   final bool enableCardTap;
   final bool expandedMedia;
   final double replyIndent;
+  final bool isPinned;
 
   const TweetTile({
     super.key,
@@ -31,6 +33,7 @@ class TweetTile extends StatefulWidget {
     this.enableCardTap = true,
     this.expandedMedia = false,
     this.replyIndent = 0,
+    this.isPinned = false,
   });
 
   @override
@@ -145,6 +148,7 @@ class _TweetTileState extends State<TweetTile> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (widget.isPinned) const _PinnedBanner(),
                     TweetContent(
                       tweet: widget.tweet,
                       expandedMedia: widget.expandedMedia,
@@ -156,7 +160,8 @@ class _TweetTileState extends State<TweetTile> {
                       onHashtagTap: widget.onHashtagTap,
                       headerTrailing: _buildManageButton(),
                     ),
-                    if (widget.showActionBar)
+                    if (widget.showActionBar) ...[
+                      _TweetViewCount(tweet: widget.tweet),
                       Padding(
                         padding: EdgeInsets.only(
                           left: TweetContent.contentInset(nested: false),
@@ -170,12 +175,75 @@ class _TweetTileState extends State<TweetTile> {
                           ),
                         ),
                       ),
+                    ],
                   ],
                 ),
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PinnedBanner extends StatelessWidget {
+  const _PinnedBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(Icons.push_pin, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            l10n.pinnedTweet,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TweetViewCount extends StatelessWidget {
+  final TweetWithCard tweet;
+
+  const _TweetViewCount({required this.tweet});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = displayTweet(tweet).viewCount;
+    if (count == null || count <= 0) {
+      return const SizedBox.shrink();
+    }
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final formatted = NumberFormat.compact().format(count);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: TweetContent.contentInset(nested: false),
+        top: 4,
+        bottom: 2,
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.bar_chart, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            l10n.viewCount(formatted),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

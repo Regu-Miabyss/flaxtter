@@ -13,11 +13,11 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 Future<bool> isOwnTweet(TweetWithCard tweet) async {
-  final accounts = await getAccounts();
-  if (accounts.isEmpty) {
+  final account = await getActiveAccount();
+  if (account == null) {
     return false;
   }
-  final own = accounts.first.screenName.toLowerCase();
+  final own = account.screenName.toLowerCase();
   final author = displayTweet(tweet).user?.screenName?.toLowerCase();
   return own.isNotEmpty && own == author;
 }

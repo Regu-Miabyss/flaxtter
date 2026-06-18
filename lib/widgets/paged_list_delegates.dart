@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
+import 'package:flaxtter/widgets/tweet_loading_skeleton.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
 /// Footer shown when loading the next page fails — scroll or tap to retry.
@@ -106,10 +107,10 @@ PagedChildBuilderDelegate<ItemType> flaxtterPagedDelegate<ItemType>({
       message: l10n.scrollToRetryLoading,
       onRetry: fetchNextPage,
     ),
-    firstPageProgressIndicatorBuilder: (_) => const Center(child: CircularProgressIndicator()),
+    firstPageProgressIndicatorBuilder: (_) => const TweetLoadingSkeleton(),
     newPageProgressIndicatorBuilder: (_) => const Padding(
-      padding: EdgeInsets.all(16),
-      child: Center(child: CircularProgressIndicator()),
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: TweetLoadingSkeleton(itemCount: 2),
     ),
     noItemsFoundIndicatorBuilder: (_) => Center(child: Text(noItemsMessage ?? l10n.noResults)),
     noMoreItemsIndicatorBuilder: (_) => PagedEndFooter(message: l10n.reachedEnd),

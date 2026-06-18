@@ -10,6 +10,14 @@
   "me": "Me",
   "user": "User",
   "searchTweetsHint": "Search tweets, or @username",
+  "searchForQuery": "Search for {query}",
+  "@searchForQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "noResults": "No results",
   "retry": "Retry",
   "scrollToRetryLoading": "Couldn't load more. Scroll down or tap to retry.",
@@ -245,6 +253,15 @@
       }
     }
   },
+  "followsYou": "Follows you",
+  "confirmUnfollow": "Unfollow @{screenName}?",
+  "@confirmUnfollow": {
+    "placeholders": {
+      "screenName": {
+        "type": "String"
+      }
+    }
+  },
   "notifications": "Notifications",
   "noNotifications": "No notifications yet",
   "pollVotes": "{count} votes",
@@ -269,6 +286,9 @@
   "notifRetweets": "Retweets",
   "notifFollows": "New followers",
   "notifMentions": "Mentions & replies",
+  "notifTabAll": "All",
+  "notifTabMentions": "Mentions",
+  "notifTabVerified": "Verified",
   "notifOther": "Other",
   "mutedUsers": "Muted users",
   "blockedUsers": "Blocked users",
@@ -301,6 +321,11 @@
   "customFont": "Custom font",
   "customFontDefault": "Default font (tap to choose a local .ttf / .otf file)",
   "restoreDefaultFont": "Restore default font",
+  "invalidFontFile": "The selected file is not a valid font.",
+  "customFontRestartRequired": "Custom font saved. Restart the app to apply it everywhere.",
+  "restartLater": "Restart later",
+  "restartNow": "Restart now",
+  "reselectFont": "Choose again",
   "saveVideo": "Save video",
   "videoSaved": "Saved to {path}",
   "@videoSaved": {
@@ -312,5 +337,37 @@
   },
   "playbackSpeed": "Playback speed",
   "portraitMode": "Portrait",
-  "landscapeMode": "Landscape"
+  "landscapeMode": "Landscape",
+  "timelineForYou": "For you",
+  "timelineFollowing": "Following",
+  "pinnedTweet": "Pinned",
+  "joinedDate": "Joined {date}",
+  "@joinedDate": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "trendsLocation": "Trends location",
+  "selectTrendsLocation": "Select location",
+  "searchTrendsLocationHint": "Search locations",
+  "noTrendsLocationMatches": "No matching locations",
+  "trendsWorldwide": "Worldwide",
+  "searchUsers": "Search users",
+  "searchUsersHint": "Search for people",
+  "noUsersFound": "No users found",
+  "textSize": "Text size",
+  "textSizeHint": "Adjust display text size",
+  "switchAccount": "Switch account",
+  "switchAccountHint": "Choose which logged-in account to use",
+  "altText": "Alt text",
+  "viewCount": "{count} views",
+  "@viewCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -39,6 +39,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get searchTweetsHint => '搜索推文，或输入 @用户名';
 
   @override
+  String searchForQuery(String query) {
+    return '搜索「$query」';
+  }
+
+  @override
   String get noResults => '暫無結果';
 
   @override
@@ -384,6 +389,14 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get followsYou => '跟随你';
+
+  @override
+  String confirmUnfollow(String screenName) {
+    return '取消关注 @$screenName？';
+  }
+
+  @override
   String get notifications => '通知';
 
   @override
@@ -435,6 +448,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get notifMentions => '提及与回复';
+
+  @override
+  String get notifTabAll => '全部';
+
+  @override
+  String get notifTabMentions => '提及';
+
+  @override
+  String get notifTabVerified => '认证';
 
   @override
   String get notifOther => '其他';
@@ -533,6 +555,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get restoreDefaultFont => '恢复默认字体';
 
   @override
+  String get invalidFontFile => '所选文件不是有效的字体文件。';
+
+  @override
+  String get customFontRestartRequired => '自定义字体已保存，需要重启应用后才会全面生效。';
+
+  @override
+  String get restartLater => '稍后重启';
+
+  @override
+  String get restartNow => '现在重启';
+
+  @override
+  String get reselectFont => '重新选择';
+
+  @override
   String get saveVideo => '保存视频';
 
   @override
@@ -548,6 +585,64 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get landscapeMode => '横屏';
+
+  @override
+  String get timelineForYou => '推荐';
+
+  @override
+  String get timelineFollowing => '正在关注';
+
+  @override
+  String get pinnedTweet => '置顶';
+
+  @override
+  String joinedDate(String date) {
+    return '$date 加入';
+  }
+
+  @override
+  String get trendsLocation => '趋势地区';
+
+  @override
+  String get selectTrendsLocation => '选择地区';
+
+  @override
+  String get searchTrendsLocationHint => '搜索地区';
+
+  @override
+  String get noTrendsLocationMatches => '没有匹配的地区';
+
+  @override
+  String get trendsWorldwide => '全球';
+
+  @override
+  String get searchUsers => '搜索用户';
+
+  @override
+  String get searchUsersHint => '搜索用户';
+
+  @override
+  String get noUsersFound => '未找到用户';
+
+  @override
+  String get textSize => '字号';
+
+  @override
+  String get textSizeHint => '调整界面文字大小';
+
+  @override
+  String get switchAccount => '切换账号';
+
+  @override
+  String get switchAccountHint => '选择当前使用的登录账号';
+
+  @override
+  String get altText => '替代文字';
+
+  @override
+  String viewCount(String count) {
+    return '$count 次浏览';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -570,7 +665,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get logout => '登出';
 
   @override
-  String get search => '搜索';
+  String get search => '搜尋';
 
   @override
   String get home => '首頁';
@@ -582,7 +677,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get user => '用戶';
 
   @override
-  String get searchTweetsHint => '搜索推文，或輸入 @用戶名';
+  String get searchTweetsHint => '搜尋推文，或輸入 @用戶名';
+
+  @override
+  String searchForQuery(String query) {
+    return '搜尋「$query」';
+  }
 
   @override
   String get noResults => '暫無結果';
@@ -640,27 +740,27 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get userNotFound => '找不到用戶';
 
   @override
-  String get saveImage => '保存圖像';
+  String get saveImage => '儲存圖像';
 
   @override
   String get shareImage => '分享';
 
   @override
-  String get copyLink => '複製鏈接';
+  String get copyLink => '複製連結';
 
   @override
   String get copyImage => '複製圖像';
 
   @override
   String imageSaved(String path) {
-    return '已保存至 $path';
+    return '已儲存至 $path';
   }
 
   @override
-  String get linkCopied => '鏈接已複製';
+  String get linkCopied => '連結已複製';
 
   @override
-  String get imageLinkCopied => '圖像鏈接已複製';
+  String get imageLinkCopied => '圖像連結已複製';
 
   @override
   String actionFailed(String error) {
@@ -676,19 +776,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get shareTweetLink => '分享鏈接';
+  String get shareTweetLink => '分享連結';
 
   @override
   String get shareTweetAsImage => '生成推文圖片';
 
   @override
   String tweetImageSavedAndCopied(String path) {
-    return '已保存至 $path，並複製到剪貼板';
+    return '已儲存至 $path，並複製到剪貼板';
   }
 
   @override
   String tweetImageSaved(String path) {
-    return '已保存至 $path（剪貼板複製失敗，請安裝 wl-copy 或 xclip）';
+    return '已儲存至 $path（剪貼板複製失敗，請安裝 wl-copy 或 xclip）';
   }
 
   @override
@@ -710,7 +810,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get following => '追蹤中';
 
   @override
-  String get followers => '跟隨者';
+  String get followers => '粉絲';
 
   @override
   String profileTweetCount(int tweets) {
@@ -731,13 +831,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get noFollowing => '尚未追蹤任何人';
 
   @override
-  String get noFollowers => '尚無跟隨者';
+  String get noFollowers => '尚無粉絲';
 
   @override
-  String get follow => '關注';
+  String get follow => '追蹤';
 
   @override
-  String get unfollow => '取消關注';
+  String get unfollow => '取消追蹤';
 
   @override
   String get loginRequired => '請先登入';
@@ -783,7 +883,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get replyHint => '寫下你的回覆';
 
   @override
-  String get quoteHint => '添加評論';
+  String get quoteHint => '寫下你的看法';
 
   @override
   String get quoteTweet => '引用';
@@ -926,7 +1026,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String confirmBlock(String screenName) {
-    return '封鎖 @$screenName？對方將無法關注你或查看你的推文。';
+    return '封鎖 @$screenName？對方將無法追蹤你或查看你的推文。';
+  }
+
+  @override
+  String get followsYou => '追蹤你';
+
+  @override
+  String confirmUnfollow(String screenName) {
+    return '取消追蹤 @$screenName？';
   }
 
   @override
@@ -944,7 +1052,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get pollEnded => '已結束';
 
   @override
-  String get settingsGeneral => '通用';
+  String get settingsGeneral => '一般';
 
   @override
   String get settingsAppearanceSubtitle => '主題模式、顏色、字型';
@@ -981,6 +1089,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get notifMentions => '提及與回覆';
+
+  @override
+  String get notifTabAll => '全部';
+
+  @override
+  String get notifTabMentions => '提及';
+
+  @override
+  String get notifTabVerified => '認證';
 
   @override
   String get notifOther => '其他';
@@ -1079,11 +1196,26 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get restoreDefaultFont => '恢復預設字型';
 
   @override
-  String get saveVideo => '保存影片';
+  String get invalidFontFile => '所選檔案不是有效的字型檔案。';
+
+  @override
+  String get customFontRestartRequired => '自訂字型已儲存，需要重新啟動應用程式後才會全面生效。';
+
+  @override
+  String get restartLater => '稍後重新啟動';
+
+  @override
+  String get restartNow => '現在重新啟動';
+
+  @override
+  String get reselectFont => '重新選擇';
+
+  @override
+  String get saveVideo => '儲存影片';
 
   @override
   String videoSaved(String path) {
-    return '已保存至 $path';
+    return '已儲存至 $path';
   }
 
   @override
@@ -1094,4 +1226,62 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get landscapeMode => '橫向';
+
+  @override
+  String get timelineForYou => '為你推薦';
+
+  @override
+  String get timelineFollowing => '正在關注';
+
+  @override
+  String get pinnedTweet => '置頂';
+
+  @override
+  String joinedDate(String date) {
+    return '$date 加入';
+  }
+
+  @override
+  String get trendsLocation => '趨勢地區';
+
+  @override
+  String get selectTrendsLocation => '選擇地區';
+
+  @override
+  String get searchTrendsLocationHint => '搜尋地區';
+
+  @override
+  String get noTrendsLocationMatches => '找不到符合的地區';
+
+  @override
+  String get trendsWorldwide => '全球';
+
+  @override
+  String get searchUsers => '搜尋用戶';
+
+  @override
+  String get searchUsersHint => '搜尋用戶';
+
+  @override
+  String get noUsersFound => '找不到用戶';
+
+  @override
+  String get textSize => '字級';
+
+  @override
+  String get textSizeHint => '調整介面文字大小';
+
+  @override
+  String get switchAccount => '切換帳號';
+
+  @override
+  String get switchAccountHint => '選擇目前使用的登入帳號';
+
+  @override
+  String get altText => '替代文字';
+
+  @override
+  String viewCount(String count) {
+    return '$count 次瀏覽';
+  }
 }

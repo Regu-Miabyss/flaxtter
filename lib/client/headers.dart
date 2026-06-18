@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:math';
-import 'package:flaxtter/database/entities.dart';
 import 'package:flaxtter/client/x_client_transaction_id/client_transaction.dart';
 import 'package:flaxtter/constants.dart';
 
@@ -54,11 +52,10 @@ class TwitterHeaders {
   }
 
   static Future<Map<dynamic, dynamic>?> getAuthHeader() async {
-    final accounts = await getAccounts();
-    if(accounts.isEmpty) {
+    final account = await getActiveAccount();
+    if (account == null) {
       return null;
     }
-    Account account = accounts[Random().nextInt(accounts.length)];
     final authHeader = Map.castFrom<String, dynamic, String, String>(json.decode(account.authHeader));
     return authHeader;
   }

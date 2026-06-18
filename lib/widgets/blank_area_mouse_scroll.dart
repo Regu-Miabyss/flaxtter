@@ -20,7 +20,13 @@ class BlankAreaMouseDragScroll extends StatefulWidget {
 }
 
 class _BlankAreaMouseDragScrollState extends State<BlankAreaMouseDragScroll> {
+  /// Minimum pointer movement before a press becomes a scroll drag instead of a click.
+  static const _dragSlop = 4.0;
+
   int? _activePointer;
+  Offset? _downGlobalPosition;
+  Offset? _downLocalPosition;
+  ScrollPosition? _pendingScrollPosition;
   Drag? _drag;
 
   void _hitTestAt(Offset globalPosition, HitTestResult result) {
@@ -28,13 +34,25 @@ class _BlankAreaMouseDragScrollState extends State<BlankAreaMouseDragScroll> {
     WidgetsBinding.instance.hitTestInView(result, globalPosition, view.viewId);
   }
 
+  bool _targetIsInteractive(HitTestTarget target) {
+    if (target is RenderMetaData && target.metaData == interactiveContentTag) {
+      return true;
+    }
+    if (target is RenderSemanticsAnnotations) {
+      final properties = target.properties;
+      if (properties.onTap != null || properties.onLongPress != null) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool _isInteractiveHit(Offset globalPosition) {
     final result = HitTestResult();
     _hitTestAt(globalPosition, result);
 
     for (final entry in result.path) {
-      final target = entry.target;
-      if (target is RenderMetaData && target.metaData == interactiveContentTag) {
+      if (_targetIsInteractive(entry.target)) {
         return true;
       }
     }
@@ -71,6 +89,9 @@ class _BlankAreaMouseDragScrollState extends State<BlankAreaMouseDragScroll> {
   void _cancelDrag() {
     _drag = null;
     _activePointer = null;
+    _downGlobalPosition = null;
+    _downLocalPosition = null;
+    _pendingScrollPosition = null;
   }
 
   void _onPointerDown(PointerDownEvent event) {
@@ -87,20 +108,56 @@ class _BlankAreaMouseDragScrollState extends State<BlankAreaMouseDragScroll> {
     }
 
     _activePointer = event.pointer;
-    _drag = position.drag(
+    _downGlobalPosition = event.position;
+    _downLocalPosition = event.localPosition;
+    _pendingScrollPosition = position;
+  }
+
+  void _startDrag(Offset globalPosition) {
+    final scrollPosition = _pendingScrollPosition;
+    final downGlobal = _downGlobalPosition;
+    final downLocal = _downLocalPosition;
+    if (scrollPosition == null || downGlobal == null || downLocal == null) {
+      return;
+    }
+
+    _drag = scrollPosition.drag(
       DragStartDetails(
-        globalPosition: event.position,
-        localPosition: event.localPosition,
+        globalPosition: downGlobal,
+        localPosition: downLocal,
       ),
       _cancelDrag,
+    );
+    _drag!.update(
+      DragUpdateDetails(
+        globalPosition: globalPosition,
+        localPosition: globalPosition,
+        delta: globalPosition - downGlobal,
+      ),
     );
   }
 
   void _onPointerMove(PointerMoveEvent event) {
-    if (event.pointer != _activePointer || _drag == null) {
+    if (event.pointer != _activePointer) {
       return;
     }
     if (event.kind != PointerDeviceKind.mouse) {
+      return;
+    }
+
+    if (_drag == null) {
+      final down = _downGlobalPosition;
+      if (down == null) {
+        return;
+      }
+      if ((event.position - down).distance < _dragSlop) {
+        return;
+      }
+      if (_isInteractiveHit(down)) {
+        _cancelDrag();
+        return;
+      }
+      _startDrag(event.position);
       return;
     }
 
@@ -119,8 +176,7 @@ class _BlankAreaMouseDragScrollState extends State<BlankAreaMouseDragScroll> {
     }
 
     _drag?.end(DragEndDetails());
-    _drag = null;
-    _activePointer = null;
+    _cancelDrag();
   }
 
   @override

@@ -5,7 +5,7 @@ import 'package:flaxtter/utils/image_layout.dart';
 import 'package:flaxtter/utils/interactive_content.dart';
 import 'package:flaxtter/utils/media_actions.dart';
 import 'package:flaxtter/utils/tweet_text.dart';
-import 'package:flaxtter/widgets/linear_slide_image_stack.dart';
+import 'package:flaxtter/widgets/interactive_image_pager.dart';
 import 'package:flaxtter/widgets/network_image_with_progress.dart';
 import 'package:flaxtter/widgets/tweet_detail_image.dart';
 import 'package:flaxtter/widgets/tweet_image_viewer.dart';
@@ -46,16 +46,15 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
   static const _compactHeight = 220.0;
 
   int _currentIndex = 0;
-  int _slideDirection = 1;
   bool _sensitiveRevealed = false;
   bool _loadConfirmed = false;
+  final GlobalKey<InteractiveImagePagerState> _pagerKey = GlobalKey();
 
   @override
   void didUpdateWidget(covariant TweetMediaGallery oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.images != widget.images) {
-      _currentIndex = 0;
-      _slideDirection = 1;
+      setState(() => _currentIndex = 0);
     }
   }
 
@@ -63,29 +62,18 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
     if (index < 0 || index >= widget.images.length || index == _currentIndex) {
       return;
     }
-    setState(() {
-      _slideDirection = index > _currentIndex ? 1 : -1;
-      _currentIndex = index;
-    });
+    _pagerKey.currentState?.animateToPage(index);
   }
 
   void _showPrevious() => _goTo(_currentIndex - 1);
 
   void _showNext() => _goTo(_currentIndex + 1);
 
-  void _onHorizontalDragEnd(DragEndDetails details) {
-    final velocity = details.primaryVelocity ?? 0;
-    if (velocity < -200) {
-      _showNext();
-    } else if (velocity > 200) {
-      _showPrevious();
-    }
-  }
-
   void _openViewer() {
     TweetImageViewer.open(
       context,
       imageUrls: widget.images.map((item) => item.url).toList(),
+      altTexts: widget.images.map((item) => item.altText).toList(),
       initialIndex: _currentIndex,
       statusUrl: widget.statusUrl,
     );
@@ -191,14 +179,12 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
               height: expandedHeight,
               child: Stack(
                 children: [
-                  GestureDetector(
-                    onHorizontalDragEnd: hasMultiple ? _onHorizontalDragEnd : null,
-                    child: LinearSlideImageStack(
-                      index: _currentIndex,
-                      slideDirection: _slideDirection,
-                      itemCount: widget.images.length,
-                      itemBuilder: (context, index) => _buildImage(index, quality),
-                    ),
+                  InteractiveImagePager(
+                    key: _pagerKey,
+                    index: _currentIndex,
+                    itemCount: widget.images.length,
+                    onIndexChanged: (index) => setState(() => _currentIndex = index),
+                    itemBuilder: (context, index) => _buildImage(index, quality),
                   ),
                   if (hasMultiple && _currentIndex > 0)
                     Positioned(
@@ -238,6 +224,24 @@ class _TweetMediaGalleryState extends State<TweetMediaGallery> {
                           child: Text(
                             '${_currentIndex + 1}/${widget.images.length}',
                             style: const TextStyle(color: Colors.white, fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_currentImage.altText?.isNotEmpty == true)
+                    Positioned(
+                      left: 8,
+                      bottom: 8,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.black54,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            l10n.altText,
+                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
                           ),
                         ),
                       ),

@@ -14,11 +14,13 @@ import 'package:flaxtter/features/timeline/timeline_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/image_picker_utils.dart';
 import 'package:flaxtter/utils/media_actions.dart';
+import 'package:flaxtter/utils/notification_unread.dart';
 import 'package:flaxtter/utils/notifiers.dart';
 import 'package:flaxtter/utils/profile_cache.dart';
 import 'package:flaxtter/utils/scroll_to_top_refresh_controller.dart';
 import 'package:flaxtter/widgets/compose_expandable_fab.dart';
 import 'package:flaxtter/widgets/tweet_compose_sheet.dart';
+import 'package:flaxtter/widgets/tweet_loading_skeleton.dart';
 import 'package:provider/provider.dart';
 
 enum _HomeTab { home, search, notifications, me }
@@ -51,12 +53,14 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _tweetActions = context.read<TweetActionNotifier>();
     _tweetActions.addListener(_onTweetAction);
+    context.read<AccountAddedNotifier>().addListener(_onAccountChanged);
     _loadOwnAccount();
   }
 
   @override
   void dispose() {
     _tweetActions.removeListener(_onTweetAction);
+    context.read<AccountAddedNotifier>().removeListener(_onAccountChanged);
     _homeScrollAction.dispose();
     _profileScrollAction.dispose();
     _notificationsScrollAction.dispose();
@@ -70,12 +74,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _onAccountChanged() {
+    unawaited(_loadOwnAccount());
+  }
+
   Future<void> _loadOwnAccount() async {
-    final accounts = await getAccounts();
-    if (!mounted || accounts.isEmpty) {
+    final account = await getActiveAccount();
+    if (!mounted || account == null) {
       return;
     }
-    final screenName = accounts.first.screenName;
+    final screenName = account.screenName;
     setState(() => _screenName = screenName);
 
     // Avatar for the bottom navigation: cached profile first, network fallback.
@@ -123,9 +131,29 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     }
     setState(() => _index = value);
+    if (_tabs[value] == _HomeTab.notifications) {
+      context.read<NotificationUnreadNotifier>().refresh();
+    }
   }
 
-  Widget _navIcon(ScrollToTopRefreshController controller, Widget defaultIcon) {
+  Widget _notificationIcon(IconData icon, {bool showBadge = true}) {
+    final unread = context.watch<NotificationUnreadNotifier>().unreadCount;
+    final child = Icon(icon);
+    if (!showBadge || unread <= 0) {
+      return child;
+    }
+    final label = unread > 99 ? '99+' : '$unread';
+    return Badge(label: Text(label), child: child);
+  }
+
+  Widget _navIcon(
+    ScrollToTopRefreshController controller,
+    Widget defaultIcon, {
+    bool active = true,
+  }) {
+    if (!active) {
+      return defaultIcon;
+    }
     return switch (controller.icon) {
       TabNavScrollIcon.scrollToTop => const Icon(Icons.arrow_upward),
       TabNavScrollIcon.refresh => const Icon(Icons.refresh),
@@ -187,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       case _HomeTab.me:
         if (_screenName == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const TweetLoadingSkeleton();
         }
         return ProfileBody(
           key: ValueKey(_screenName),
@@ -203,14 +231,21 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (tab) {
       case _HomeTab.home:
         return NavigationDestination(
-          icon: _navIcon(_homeScrollAction, const Icon(Icons.home)),
+          icon: _navIcon(
+            _homeScrollAction,
+            const Icon(Icons.home),
+            active: _index == _tabs.indexOf(_HomeTab.home),
+          ),
           label: l10n.home,
         );
       case _HomeTab.search:
         return NavigationDestination(icon: const Icon(Icons.search), label: l10n.search);
       case _HomeTab.notifications:
         return NavigationDestination(
-          icon: _navIcon(_notificationsScrollAction, const Icon(Icons.notifications_none)),
+          icon: _navIcon(
+            _notificationsScrollAction,
+            _notificationIcon(Icons.notifications_none),
+          ),
           label: l10n.notifications,
         );
       case _HomeTab.me:
@@ -243,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                   ),
-                  icon: const Icon(Icons.notifications_none),
+                  icon: _notificationIcon(Icons.notifications_none),
                 ),
                 IconButton(
                   tooltip: l10n.bookmarks,
