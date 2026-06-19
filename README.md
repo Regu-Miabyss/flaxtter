@@ -52,7 +52,7 @@ This is not an official X product. Use it at your own risk.
 | Copy tweet text / link, share link               | ✓         |
 | Video playback in tweets                         | ✓         |
 | Muted and blocked user lists                     | ✓         |
-| Localization (English, 简体中文, 繁體中文)               | ✓         |
+| i18n                                             | ✓         |
 | Push notifications                               |           |
 | Lists                                            |           |
 | Spaces                                           |           |
