@@ -1,11 +1,20 @@
 # Flaxtter
 
+| Home timeline | Search |
+|:---:|:---:|
+| ![Home timeline](images/home_timeline.PNG) | ![Search](images/search.PNG) |
 
+| Tweet detail | Quote tweet |
+|:---:|:---:|
+| ![Tweet detail](images/tweet.PNG) | ![Quote tweet](images/quote_tweet.PNG) |
 
+| Profile | Notifications |
+|:---:|:---:|
+| ![Profile](images/profile.PNG) | ![Notifications](images/notification.PNG) |
 
-
-
-
+| Image viewer | Settings |
+|:---:|:---:|
+| ![Image viewer](images/image_functions.PNG) | ![Settings](images/settings.PNG) |
 
 
 A third-party Twitter/X client for **Linux** and **Android**, built with Flutter. Session login uses a WebView; the API layer is adapted from [Squawker](https://github.com/j-fbriere/squawker).

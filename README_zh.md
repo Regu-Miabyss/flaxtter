@@ -1,11 +1,20 @@
 # Flaxtter
 
+| 首頁時間軸 | 搜尋 |
+|:---:|:---:|
+| ![首頁時間軸](images/home_timeline.PNG) | ![搜尋](images/search.PNG) |
 
+| 推文詳情 | 引用推文 |
+|:---:|:---:|
+| ![推文詳情](images/tweet.PNG) | ![引用推文](images/quote_tweet.PNG) |
 
+| 個人資料 | 通知 |
+|:---:|:---:|
+| ![個人資料](images/profile.PNG) | ![通知](images/notification.PNG) |
 
-
-
-
+| 圖片檢視 | 設定 |
+|:---:|:---:|
+| ![圖片檢視](images/image_functions.PNG) | ![設定](images/settings.PNG) |
 
 
 面向 **Linux** 與 **Android** 的第三方 Twitter/X 用戶端，以 Flutter 建構。透過 WebView 登入取得工作階段；API 層移植自 [Squawker](https://github.com/j-fbriere/squawker)。
