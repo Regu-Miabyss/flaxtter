@@ -123,11 +123,9 @@ jobs:
         run: bash packaging/ci/install-linux-build-deps.sh
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+        run: bash packaging/ci/setup-flutter-linux.sh
+        env:
+          FLUTTER_VERSION: ${{ env.FLUTTER_VERSION }}
 
       - name: Build Linux arm64 packages
         run: bash packaging/build.sh linux arm64
