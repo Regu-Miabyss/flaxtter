@@ -103,7 +103,6 @@ class _ProfileFollowsScreenState extends State<ProfileFollowsScreen> {
     final title = widget.type == 'following' ? l10n.following : l10n.followers;
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(title)),
       body: PullToRefresh(
         onRefresh: _refresh,

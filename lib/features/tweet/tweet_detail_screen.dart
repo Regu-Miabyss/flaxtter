@@ -254,7 +254,6 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
 
     if (_loadingFocal && _focalTweet == null) {
       return Scaffold(
-        primary: false,
         appBar: AppBar(title: Text(l10n.tweetDetail)),
         body: PullToRefreshPlaceholder(
           onRefresh: _refreshAll,
@@ -265,7 +264,6 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
 
     if (_focalTweet == null && _loadError != null) {
       return Scaffold(
-        primary: false,
         appBar: AppBar(title: Text(l10n.tweetDetail)),
         body: PullToRefreshPlaceholder(
           onRefresh: _refreshAll,
@@ -287,7 +285,6 @@ class _TweetDetailScreenState extends State<TweetDetailScreen> {
     final tweetsById = _tweetsById();
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.tweetDetail)),
       body: PullToRefresh(
         onRefresh: _refreshAll,

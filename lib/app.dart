@@ -44,7 +44,12 @@ ColorScheme _layeredColorScheme(ColorScheme scheme) {
 class FlaxtterApp extends StatelessWidget {
   const FlaxtterApp({super.key});
 
-  ThemeData _theme(ColorScheme colorScheme, String fontFamily, List<String> fontFallback) {
+  ThemeData _theme(
+    ColorScheme colorScheme,
+    String fontFamily,
+    List<String> fontFallback,
+    double textScale,
+  ) {
     final layered = _layeredColorScheme(colorScheme);
     final base = ThemeData(
       colorScheme: layered,
@@ -57,6 +62,9 @@ class FlaxtterApp extends StatelessWidget {
       appBarTheme: base.appBarTheme.copyWith(
         backgroundColor: layered.surfaceContainerLow,
         surfaceTintColor: Colors.transparent,
+        // Icons must not follow text scaling — scaled back chevrons clip to a slash.
+        iconTheme: const IconThemeData(size: 24),
+        actionsIconTheme: const IconThemeData(size: 24),
       ),
       navigationBarTheme: base.navigationBarTheme.copyWith(
         backgroundColor: layered.surfaceContainerLow,
@@ -85,10 +93,12 @@ class FlaxtterApp extends StatelessWidget {
       textTheme: base.textTheme.apply(
         fontFamily: fontFamily,
         fontFamilyFallback: fontFallback,
+        fontSizeFactor: textScale,
       ),
       primaryTextTheme: base.primaryTextTheme.apply(
         fontFamily: fontFamily,
         fontFamilyFallback: fontFallback,
+        fontSizeFactor: textScale,
       ),
     );
   }
@@ -122,17 +132,12 @@ class FlaxtterApp extends StatelessWidget {
             return BlankAreaMouseDragScroll(
               child: ScrollConfiguration(
                 behavior: const FlaxtterScrollBehavior(),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(
-                    textScaler: TextScaler.linear(settings.textScale),
+                child: DefaultTextStyle(
+                  style: withEmojiFontFallback(
+                    theme.textTheme.bodyMedium ?? const TextStyle(),
+                    settings.locale,
                   ),
-                  child: DefaultTextStyle(
-                    style: withEmojiFontFallback(
-                      theme.textTheme.bodyMedium ?? const TextStyle(),
-                      settings.locale,
-                    ),
-                    child: child ?? const SizedBox.shrink(),
-                  ),
+                  child: child ?? const SizedBox.shrink(),
                 ),
               ),
             );
@@ -146,8 +151,8 @@ class FlaxtterApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          theme: _theme(lightScheme, fontFamily, effectiveFallback),
-          darkTheme: _theme(darkScheme, fontFamily, effectiveFallback),
+          theme: _theme(lightScheme, fontFamily, effectiveFallback, settings.textScale),
+          darkTheme: _theme(darkScheme, fontFamily, effectiveFallback, settings.textScale),
           themeMode: settings.themeMode,
           routes: {
             '/gate': (_) => const AuthGate(),

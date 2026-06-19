@@ -207,7 +207,6 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
     }
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.bookmarks)),
       body: body,
     );

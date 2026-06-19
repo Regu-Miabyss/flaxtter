@@ -56,7 +56,6 @@ class SettingsScreen extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 8),
@@ -188,7 +187,6 @@ class AppearanceSettingsScreen extends StatelessWidget {
     final settings = context.watch<AppSettings>();
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.settingsAppearance)),
       body: ListView(
         children: [
@@ -366,7 +364,6 @@ class GeneralSettingsScreen extends StatelessWidget {
     final settings = context.watch<AppSettings>();
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.settingsGeneral)),
       body: ListView(
         children: [
@@ -456,7 +453,6 @@ class MediaSettingsScreen extends StatelessWidget {
     final settings = context.watch<AppSettings>();
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.settingsMedia)),
       body: ListView(
         children: [
@@ -527,7 +523,6 @@ class NotificationSettingsScreen extends StatelessWidget {
         };
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.notifications)),
       body: ListView(
         children: [
@@ -553,7 +548,6 @@ class PrivacySettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.settingsPrivacy)),
       body: ListView(
         children: [
@@ -609,7 +603,6 @@ class DataSettingsScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.settingsData)),
       body: ListView(
         children: [

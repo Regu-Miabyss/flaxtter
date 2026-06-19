@@ -56,7 +56,6 @@ class _AccountSwitcherScreenState extends State<AccountSwitcherScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.switchAccount)),
       body: _loading
           ? const Center(child: CircularProgressIndicator())

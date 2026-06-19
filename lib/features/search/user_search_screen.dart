@@ -99,7 +99,6 @@ class _UserSearchScreenState extends State<UserSearchScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.searchUsers)),
       body: Column(
         children: [

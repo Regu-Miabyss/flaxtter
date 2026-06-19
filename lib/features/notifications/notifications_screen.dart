@@ -452,7 +452,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(l10n.notifications)),
       body: content,
     );

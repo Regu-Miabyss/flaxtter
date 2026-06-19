@@ -200,7 +200,6 @@ class _UserListScreenState extends State<UserListScreen> {
     }
 
     return Scaffold(
-      primary: false,
       appBar: AppBar(title: Text(title)),
       body: body,
     );
