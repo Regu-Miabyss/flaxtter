@@ -98,10 +98,11 @@ class FlaxtterApp extends StatelessWidget {
     final settings = context.watch<AppSettings>();
 
     final fontFamily = settings.customFontFamily ?? _fontFamily;
-    // Keep the bundled font (and emoji) as fallback behind a custom font.
-    final fontFallback = settings.customFontFamily != null
-        ? [_fontFamily, ...emojiFontFamilyFallback]
-        : emojiFontFamilyFallback;
+    final fontFallback = fontFamilyFallbackFor(settings.locale);
+    // Keep the bundled font (and CJK / emoji) as fallback behind a custom font.
+    final effectiveFallback = settings.customFontFamily != null
+        ? [_fontFamily, ...fontFallback]
+        : fontFallback;
 
     return DesktopColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
@@ -126,7 +127,10 @@ class FlaxtterApp extends StatelessWidget {
                     textScaler: TextScaler.linear(settings.textScale),
                   ),
                   child: DefaultTextStyle(
-                    style: withEmojiFontFallback(theme.textTheme.bodyMedium ?? const TextStyle()),
+                    style: withEmojiFontFallback(
+                      theme.textTheme.bodyMedium ?? const TextStyle(),
+                      settings.locale,
+                    ),
                     child: child ?? const SizedBox.shrink(),
                   ),
                 ),
@@ -142,8 +146,8 @@ class FlaxtterApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          theme: _theme(lightScheme, fontFamily, fontFallback),
-          darkTheme: _theme(darkScheme, fontFamily, fontFallback),
+          theme: _theme(lightScheme, fontFamily, effectiveFallback),
+          darkTheme: _theme(darkScheme, fontFamily, effectiveFallback),
           themeMode: settings.themeMode,
           routes: {
             '/gate': (_) => const AuthGate(),

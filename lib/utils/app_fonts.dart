@@ -18,15 +18,64 @@ const colorEmojiFontFamilies = <String>[
   'SamsungOne',
 ];
 
-/// Fallback chain after [GoogleSansFlex] for body text.
+/// Noto Sans CJK families shipped by Debian/Ubuntu `fonts-noto-cjk`.
+const cjkFontFamilyFallback = <String>[
+  'Noto Sans CJK TC',
+  'Noto Sans CJK SC',
+  'Noto Sans CJK HK',
+  'Noto Sans CJK JP',
+  'Noto Sans CJK KR',
+  'Noto Sans CJK',
+];
+
+/// CJK families with the active locale preferred first.
+List<String> prioritizedCjkFontFamilyFallback(Locale? locale) {
+  if (locale == null) {
+    return cjkFontFamilyFallback;
+  }
+
+  final lang = locale.languageCode;
+  final script = locale.scriptCode;
+  final country = locale.countryCode;
+
+  String? primary;
+  if (script == 'Hant' || country == 'TW' || country == 'HK' || country == 'MO') {
+    primary = 'Noto Sans CJK TC';
+  } else if (lang == 'zh') {
+    primary = 'Noto Sans CJK SC';
+  } else if (lang == 'ja') {
+    primary = 'Noto Sans CJK JP';
+  } else if (lang == 'ko') {
+    primary = 'Noto Sans CJK KR';
+  }
+
+  if (primary == null) {
+    return cjkFontFamilyFallback;
+  }
+
+  return [
+    primary,
+    ...cjkFontFamilyFallback.where((family) => family != primary),
+  ];
+}
+
+/// Fallback chain after the primary UI font (Latin via GoogleSansFlex).
+List<String> fontFamilyFallbackFor(Locale? locale) => [
+      ...prioritizedCjkFontFamilyFallback(locale),
+      ...colorEmojiFontFamilies,
+    ];
+
+/// @deprecated Use [fontFamilyFallbackFor].
 const emojiFontFamilyFallback = colorEmojiFontFamilies;
 
 bool isColorEmojiFontFamily(String? family) {
   return family != null && colorEmojiFontFamilies.contains(family);
 }
 
-TextStyle withEmojiFontFallback(TextStyle style) {
-  return style.copyWith(fontFamilyFallback: emojiFontFamilyFallback);
+TextStyle withEmojiFontFallback(TextStyle style, [Locale? locale]) {
+  return style.copyWith(
+    fontFamilyFallback: fontFamilyFallbackFor(locale ?? style.locale),
+  );
 }
 
 TextStyle forcedEmojiTextStyle(TextStyle style) {
