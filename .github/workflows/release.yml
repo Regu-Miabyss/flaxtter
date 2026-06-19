@@ -1,0 +1,191 @@
+# Build Flaxtter release artifacts and publish them to GitHub Releases.
+#
+# Trigger: push a version tag, e.g.  git tag v0.2.1 && git push origin v0.2.1
+# Manual:  Actions → Release → Run workflow (provide an existing tag name)
+#
+# Optional repository secrets (recommended for signed Android APKs):
+#   ANDROID_KEYSTORE_BASE64  Base64-encoded upload-keystore.jks
+#   ANDROID_STORE_PASSWORD
+#   ANDROID_KEY_PASSWORD
+#   ANDROID_KEY_ALIAS        e.g. upload
+#
+# Artifacts published:
+#   Android:  .apk (armv7, arm64, x86_64)
+#   Linux:    .deb, .rpm, .AppImage, .tar.gz (x86_64 + arm64)
+#   SHA256SUMS.txt
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing git tag to build and publish (e.g. v0.2.1)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  cancel-in-progress: true
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  FLUTTER_VERSION: 3.44.1
+
+jobs:
+  build-android:
+    name: Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Configure Android signing
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: bash packaging/ci/setup-android-signing.sh
+
+      - name: Accept Android licenses
+        run: yes | flutter doctor --android-licenses
+
+      - name: Build APKs
+        run: bash packaging/build.sh android
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/android/*
+          if-no-files-found: error
+
+  build-linux-x64:
+    name: Linux x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      - name: Install Linux build dependencies
+        run: bash packaging/ci/install-linux-build-deps.sh
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Build Linux x86_64 packages
+        run: bash packaging/build.sh linux x86_64
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-x64
+          path: dist/linux/*
+          if-no-files-found: error
+
+  build-linux-arm64:
+    name: Linux arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
+
+      - name: Set up QEMU (arm64 containers on x86_64)
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Install Linux packaging dependencies
+        run: bash packaging/ci/install-linux-build-deps.sh
+
+      - name: Build Linux arm64 packages
+        env:
+          CONTAINER_ENGINE: docker
+        run: bash packaging/build.sh linux arm64
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-arm64
+          path: dist/linux/*
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub Release
+    needs:
+      - build-android
+      - build-linux-x64
+      - build-linux-arm64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Android artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: android
+          path: release/android
+
+      - name: Download Linux x86_64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-x64
+          path: release/linux-x64
+
+      - name: Download Linux arm64 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-arm64
+          path: release/linux-arm64
+
+      - name: Prepare release files
+        run: |
+          mkdir -p release/upload
+          shopt -s nullglob
+          for dir in release/android release/linux-x64 release/linux-arm64; do
+            cp -a "$dir"/* release/upload/ 2>/dev/null || true
+          done
+          shopt -u nullglob
+          if ! ls release/upload/* >/dev/null 2>&1; then
+            echo "No release artifacts were produced." >&2
+            exit 1
+          fi
+          (cd release/upload && sha256sum * > SHA256SUMS.txt)
+          echo "Release files:"
+          ls -lh release/upload/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Flaxtter ${{ env.RELEASE_TAG }}
+          generate_release_notes: true
+          files: release/upload/*
+          fail_on_unmatched_files: true

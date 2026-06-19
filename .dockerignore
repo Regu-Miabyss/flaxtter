@@ -1,0 +1,13 @@
+.git
+.github
+.cursor
+.dart_tool
+/build
+/dist
+/android/.gradle
+/android/build
+**/*.apk
+**/*.deb
+**/*.rpm
+**/*.AppImage
+packaging/linux/.tools

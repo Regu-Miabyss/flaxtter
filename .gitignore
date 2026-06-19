@@ -45,8 +45,10 @@ app.*.map.json
 *.apk
 *.aab
 *.deb
+*.rpm
 *.tar.gz
 *.AppImage
+packaging/linux/.tools/
 
 # Secrets & local config
 .env
