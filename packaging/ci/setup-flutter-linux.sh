@@ -21,7 +21,10 @@ else
   sudo chown -R "$(id -u):$(id -g)" "$FLUTTER_HOME"
 fi
 
-echo "$FLUTTER_HOME/bin" >>"${GITHUB_PATH:?GITHUB_PATH must be set}"
+export PATH="$FLUTTER_HOME/bin:$PATH"
+if [[ -n "${GITHUB_PATH:-}" ]]; then
+  echo "$FLUTTER_HOME/bin" >>"$GITHUB_PATH"
+fi
 
 flutter config --no-analytics
 flutter precache --linux
