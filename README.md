@@ -66,7 +66,9 @@ sudo apt install \
   libwebkit2gtk-4.1-0 \
   libwebkit2gtk-4.1-dev \
   libsoup-3.0-0 \
-  libsoup-3.0-dev
+  libsoup-3.0-dev \
+  libmpv2 \
+  libmpv-dev
 ```
 
 Fedora and other RPM-based distributions:
@@ -76,7 +78,9 @@ sudo dnf install \
   webkit2gtk4.1 \
   webkit2gtk4.1-devel \
   libsoup3 \
-  libsoup3-devel
+  libsoup3-devel \
+  mpv-libs \
+  mpv-devel
 ```
 
 Optional, for copying images or tweet screenshots to the clipboard on Linux:

@@ -37,7 +37,7 @@ License:        MIT
 URL:            https://github.com/regu/flaxtter
 BuildArch:      $RPM_ARCH
 AutoReqProv:    no
-Requires:       gtk3, libsoup3, webkit2gtk4.1
+Requires:       gtk3, libsoup3, webkit2gtk4.1, mpv-libs
 
 %description
 Flaxtter is a third-party Twitter/X client. It signs in through a WebView

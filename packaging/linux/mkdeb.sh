@@ -41,7 +41,7 @@ Priority: optional
 Architecture: $DEB_ARCH
 Maintainer: Flaxtter <https://github.com/regu/flaxtter>
 Installed-Size: $INSTALLED_SIZE
-Depends: libwebkit2gtk-4.1-0, libsoup-3.0-0, libgtk-3-0
+Depends: libwebkit2gtk-4.1-0, libsoup-3.0-0, libgtk-3-0, libmpv2
 Description: A Twitter/X client for Linux
  Flaxtter is a third-party Twitter/X client. It signs in through a WebView
  cookie session and talks to X using a custom API layer.

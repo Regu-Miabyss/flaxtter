@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer';
 import 'dart:math' as m;
 
 import 'package:dart_twitter_api/src/utils/date_utils.dart';
@@ -14,7 +13,6 @@ import 'package:flaxtter/utils/iterables.dart';
 import 'package:flaxtter/utils/misc.dart';
 import 'package:flaxtter/client/client_account.dart';
 import 'package:flaxtter/client/accounts.dart';
-import 'package:flaxtter/client/client_x_regular_account.dart';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 import 'package:quiver/iterables.dart';
@@ -1906,11 +1904,6 @@ class Twitter {
     }
   }
   */
-
-  static void _printAll2(String data) {
-    //debugPrint(data, wrapWidth: 4096);
-    log(data);
-  }
 
   static Future<TweetStatus> getUserWithProfileGraphql(String id, String type, List<String> pinnedTweets,
       {int count = 10, String? cursor, bool includeReplies = true}) async {

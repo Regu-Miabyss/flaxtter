@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
-import 'package:flaxtter/client/app_http_client.dart';
 import 'package:flaxtter/client/client_unauthenticated.dart';
 import 'package:flaxtter/client/client_x_regular_account.dart';
 import 'package:flaxtter/client/headers.dart';

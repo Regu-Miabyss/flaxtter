@@ -66,7 +66,9 @@ sudo apt install \
   libwebkit2gtk-4.1-0 \
   libwebkit2gtk-4.1-dev \
   libsoup-3.0-0 \
-  libsoup-3.0-dev
+  libsoup-3.0-dev \
+  libmpv2 \
+  libmpv-dev
 ```
 
 Fedora 及其他 RPM 系發行版：
@@ -76,7 +78,9 @@ sudo dnf install \
   webkit2gtk4.1 \
   webkit2gtk4.1-devel \
   libsoup3 \
-  libsoup3-devel
+  libsoup3-devel \
+  mpv-libs \
+  mpv-devel
 ```
 
 若要在 Linux 上將圖片或推文截圖複製到剪貼簿，可選擇安裝：
