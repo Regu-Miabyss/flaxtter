@@ -18,5 +18,9 @@ case "$ARCH" in
 esac
 
 cd /src
+# Avoid reusing CMake cache from a different architecture when /src is bind-mounted.
+if [[ -d build/linux ]]; then
+  rm -rf build/linux
+fi
 flutter pub get
 flutter build linux --release --target-platform="$FLUTTER_PLATFORM"
