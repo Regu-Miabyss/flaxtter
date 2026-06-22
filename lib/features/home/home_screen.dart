@@ -54,6 +54,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _tweetActions = context.read<TweetActionNotifier>();
     _tweetActions.addListener(_onTweetAction);
     context.read<AccountAddedNotifier>().addListener(_onAccountChanged);
+    context.read<OpenNotificationsNotifier>().addListener(_onOpenNotifications);
     _loadOwnAccount();
   }
 
@@ -61,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _tweetActions.removeListener(_onTweetAction);
     context.read<AccountAddedNotifier>().removeListener(_onAccountChanged);
+    context.read<OpenNotificationsNotifier>().removeListener(_onOpenNotifications);
     _homeScrollAction.dispose();
     _profileScrollAction.dispose();
     _notificationsScrollAction.dispose();
@@ -76,6 +78,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onAccountChanged() {
     unawaited(_loadOwnAccount());
+  }
+
+  void _onOpenNotifications() {
+    if (!mounted) {
+      return;
+    }
+    if (_isAndroid) {
+      final index = _tabs.indexOf(_HomeTab.notifications);
+      if (index >= 0) {
+        setState(() => _index = index);
+        context.read<NotificationUnreadNotifier>().refresh();
+      }
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+    );
   }
 
   Future<void> _loadOwnAccount() async {

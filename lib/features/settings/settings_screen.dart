@@ -6,6 +6,8 @@ import 'package:flaxtter/features/settings/account_switcher_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/app_rebirth.dart';
 import 'package:flaxtter/utils/app_settings.dart';
+import 'package:flaxtter/utils/local_push_notifications.dart';
+import 'package:flaxtter/utils/notification_push_coordinator.dart';
 import 'package:flaxtter/utils/json_cache.dart';
 import 'package:flaxtter/utils/media_actions.dart';
 import 'package:flaxtter/utils/search_history.dart';
@@ -498,6 +500,30 @@ class MediaSettingsScreen extends StatelessWidget {
   }
 }
 
+Future<void> setPushNotificationsEnabled(
+  BuildContext context,
+  AppSettings settings,
+  bool enabled,
+) async {
+  final l10n = AppLocalizations.of(context);
+  if (enabled) {
+    final granted = await LocalPushNotifications.requestPermission();
+    if (!context.mounted) {
+      return;
+    }
+    if (!granted) {
+      await showMediaActionSnackBar(context, l10n.pushNotificationsDenied);
+      return;
+    }
+    settings.pushNotificationsEnabled = true;
+    await context.read<NotificationPushCoordinator>().resetBaseline();
+    return;
+  }
+
+  settings.pushNotificationsEnabled = false;
+  await LocalPushNotifications.cancelAll();
+}
+
 class NotificationSettingsScreen extends StatelessWidget {
   const NotificationSettingsScreen({super.key});
 
@@ -526,6 +552,15 @@ class NotificationSettingsScreen extends StatelessWidget {
       appBar: AppBar(title: Text(l10n.notifications)),
       body: ListView(
         children: [
+          if (LocalPushNotifications.isSupported)
+            SwitchListTile(
+              secondary: const Icon(Icons.notifications_active_outlined),
+              title: Text(l10n.pushNotifications),
+              subtitle: Text(l10n.pushNotificationsHint),
+              value: settings.pushNotificationsEnabled,
+              onChanged: (value) => setPushNotificationsEnabled(context, settings, value),
+            ),
+          if (LocalPushNotifications.isSupported) const Divider(indent: 16, endIndent: 16),
           _SectionHeader(title: l10n.settingsNotificationsSubtitle),
           for (final type in NotificationType.values)
             SwitchListTile(

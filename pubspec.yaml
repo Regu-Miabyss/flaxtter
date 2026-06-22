@@ -52,6 +52,7 @@ dependencies:
   mpris_service:
     git: https://github.com/alexmercerind/mpris_service
   window_manager: ^0.5.1
+  flutter_local_notifications: ^19.0.0
 
 dev_dependencies:
   flutter_test:

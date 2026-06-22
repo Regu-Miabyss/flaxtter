@@ -467,6 +467,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifOther => 'Other';
 
   @override
+  String get pushNotifications => 'Push notifications';
+
+  @override
+  String get pushNotificationsHint =>
+      'Alert when new notifications arrive while the app is running';
+
+  @override
+  String get pushNotificationsDenied => 'Notification permission was denied';
+
+  @override
   String get mutedUsers => 'Muted users';
 
   @override

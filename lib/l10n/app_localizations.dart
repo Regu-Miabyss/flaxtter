@@ -921,6 +921,24 @@ abstract class AppLocalizations {
   /// **'Other'**
   String get notifOther;
 
+  /// No description provided for @pushNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get pushNotifications;
+
+  /// No description provided for @pushNotificationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Alert when new notifications arrive while the app is running'**
+  String get pushNotificationsHint;
+
+  /// No description provided for @pushNotificationsDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission was denied'**
+  String get pushNotificationsDenied;
+
   /// No description provided for @mutedUsers.
   ///
   /// In en, this message translates to:

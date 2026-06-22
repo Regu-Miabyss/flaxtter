@@ -50,6 +50,7 @@ class AppSettings extends ChangeNotifier {
   static const _keyHomeTimelineMode = 'home_timeline_mode';
   static const _keyTextScale = 'text_scale';
   static const _keyTrendsWoeid = 'trends_woeid';
+  static const _keyPushNotifications = 'push_notifications';
 
   SharedPreferences? _prefs;
 
@@ -70,6 +71,7 @@ class AppSettings extends ChangeNotifier {
   HomeTimelineMode _homeTimelineMode = HomeTimelineMode.forYou;
   double _textScale = 1.0;
   int _trendsWoeid = 1;
+  bool _pushNotificationsEnabled = false;
 
   /// Runtime family name of the loaded custom font (null = bundled default).
   String? _customFontFamily;
@@ -93,6 +95,7 @@ class AppSettings extends ChangeNotifier {
   HomeTimelineMode get homeTimelineMode => _homeTimelineMode;
   double get textScale => _textScale;
   int get trendsWoeid => _trendsWoeid;
+  bool get pushNotificationsEnabled => _pushNotificationsEnabled;
 
   Locale? get locale => switch (_language) {
         AppLanguage.system => null,
@@ -142,6 +145,7 @@ class AppSettings extends ChangeNotifier {
     );
     _textScale = prefs.getDouble(_keyTextScale) ?? 1.0;
     _trendsWoeid = prefs.getInt(_keyTrendsWoeid) ?? 1;
+    _pushNotificationsEnabled = prefs.getBool(_keyPushNotifications) ?? false;
   }
 
   set themeMode(ThemeMode value) {
@@ -363,6 +367,15 @@ class AppSettings extends ChangeNotifier {
     }
     _trendsWoeid = value;
     _prefs?.setInt(_keyTrendsWoeid, value);
+    notifyListeners();
+  }
+
+  set pushNotificationsEnabled(bool value) {
+    if (_pushNotificationsEnabled == value) {
+      return;
+    }
+    _pushNotificationsEnabled = value;
+    _prefs?.setBool(_keyPushNotifications, value);
     notifyListeners();
   }
 

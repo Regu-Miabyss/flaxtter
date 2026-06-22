@@ -462,6 +462,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get notifOther => '其他';
 
   @override
+  String get pushNotifications => '推送通知';
+
+  @override
+  String get pushNotificationsHint => '应用运行时收到新通知会推送提醒';
+
+  @override
+  String get pushNotificationsDenied => '未授予通知权限';
+
+  @override
   String get mutedUsers => '静音列表';
 
   @override
@@ -1101,6 +1110,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get notifOther => '其他';
+
+  @override
+  String get pushNotifications => '推播通知';
+
+  @override
+  String get pushNotificationsHint => '應用程式執行中收到新通知時會推播提醒';
+
+  @override
+  String get pushNotificationsDenied => '未授予通知權限';
 
   @override
   String get mutedUsers => '靜音清單';

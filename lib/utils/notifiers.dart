@@ -55,3 +55,9 @@ class TweetActionNotifier extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+class OpenNotificationsNotifier extends ChangeNotifier {
+  void requestOpen() {
+    notifyListeners();
+  }
+}

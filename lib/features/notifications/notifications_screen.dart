@@ -6,6 +6,8 @@ import 'package:flaxtter/features/profile/profile_screen.dart';
 import 'package:flaxtter/features/tweet/tweet_detail_screen.dart';
 import 'package:flaxtter/l10n/app_localizations.dart';
 import 'package:flaxtter/utils/app_settings.dart';
+import 'package:flaxtter/utils/notification_entry_utils.dart';
+import 'package:flaxtter/utils/local_push_notifications.dart';
 import 'package:flaxtter/utils/json_cache.dart';
 import 'package:flaxtter/utils/notifiers.dart';
 import 'package:flaxtter/utils/notification_unread.dart';
@@ -25,23 +27,6 @@ const _notificationsCacheKeyPrefix = 'notifications_first_page';
 
 String _notificationsCacheKey(NotificationsTimelineType type) =>
     '${_notificationsCacheKeyPrefix}_${type.restPath}';
-
-NotificationType notificationTypeOf(NotificationEntry entry) {
-  if (entry.tweet != null) {
-    return NotificationType.mentions;
-  }
-  final iconId = entry.notification?.iconId ?? '';
-  if (iconId.contains('heart')) {
-    return NotificationType.likes;
-  }
-  if (iconId.contains('retweet')) {
-    return NotificationType.retweets;
-  }
-  if (iconId.contains('person') || iconId.contains('follow')) {
-    return NotificationType.follows;
-  }
-  return NotificationType.other;
-}
 
 /// Notifications timeline. [embedded] renders without its own Scaffold/AppBar
 /// (used as a bottom navigation tab on Android).
@@ -341,6 +326,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
     }
     _markedSeenThisVisit = true;
     await _unread.markSeenUpTo(newest);
+    await LocalPushNotifications.cancelAll();
   }
 
   Widget _buildTabBar(AppLocalizations l10n) {

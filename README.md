@@ -53,7 +53,7 @@ This is not an official X product. Use it at your own risk.
 | Video playback in tweets                         | ✓         |
 | Muted and blocked user lists                     | ✓         |
 | i18n                                             | ✓         |
-| Push notifications                               |           |
+| Push notifications                               | ✓         |
 | Lists                                            |           |
 | Spaces                                           |           |
 | Communities                                      |           |
