@@ -25,18 +25,18 @@ class TwitterHeaders {
   static Future<ClientTransaction>? _futureInitialize;
 
   static Future<Map<String, String>?> getXClientTransactionIdHeader(Uri? uri, {String method = 'GET'}) async {
-    try {
-      if (uri == null) {
-        return null;
-      }
+    if (uri == null) {
+      return null;
+    }
 
+    try {
       _futureInitialize ??= ClientTransaction.initialize();
       final ct = await _futureInitialize!;
       return {
-        'x-client-transaction-id': ct.generateTransactionId(method, uri.path)
+        'x-client-transaction-id': ct.generateTransactionId(method, uri.path),
       };
-    }
-    catch (e) {
+    } catch (e) {
+      _futureInitialize = null;
       throw Exception('Error getting x-client-transaction-id: $e');
     }
   }

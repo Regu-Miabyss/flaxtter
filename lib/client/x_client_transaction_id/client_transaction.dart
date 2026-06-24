@@ -35,18 +35,7 @@ class ClientTransaction {
     String randomKeyword = defaultKeyword,
     int randomNumber = additionalRandomNumber,
   }) async {
-    final homePageResponse = await http.get(
-      Uri.https('x.com', '/'),
-      headers: {
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Cache-Control': 'no-cache',
-        'Referer': 'https://x.com',
-        'User-Agent': kUserAgent,
-        'X-Twitter-Active-User': 'yes',
-        'X-Twitter-Client-Language': 'en',
-      },
-    );
-    final homePageHtml = homePageResponse.body;
+    final homePageHtml = await _fetchHomePageHtml();
     final homePageDoc = html_parser.parse(homePageHtml);
 
     final ondemandUrl = _getOndemandFileUrl(homePageHtml);
@@ -103,8 +92,17 @@ class ClientTransaction {
         .allMatches(ondemandFileText)
         .map((m) => int.parse(m.group(2)!))
         .toList();
-    if (indices.isEmpty) throw Exception("Couldn't get KEY_BYTE indices");
-    return (indices[0], indices.sublist(1));
+    if (indices.isEmpty) {
+      final fallback = RegExp(r'\[(\d{1,2})\],\s*16')
+          .allMatches(ondemandFileText)
+          .map((m) => int.parse(m.group(1)!))
+          .toList();
+      if (fallback.isEmpty) {
+        throw Exception("Couldn't get KEY_BYTE indices");
+      }
+      return (fallback.first, fallback.sublist(1));
+    }
+    return (indices.first, indices.sublist(1));
   }
 
   static String _getKey(html_dom.Document doc) {
@@ -119,15 +117,70 @@ class ClientTransaction {
 
   static List<int> _getKeyBytes(String key) => base64.decode(key).toList();
 
+  static Future<String> _fetchHomePageHtml() async {
+    const headers = {
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cache-Control': 'no-cache',
+      'Referer': 'https://x.com',
+      'User-Agent': kUserAgent,
+      'X-Twitter-Active-User': 'yes',
+      'X-Twitter-Client-Language': 'en',
+    };
+
+    Object? lastError;
+    for (final path in ['/home', '/']) {
+      try {
+        final response = await http.get(
+          Uri.https('x.com', path),
+          headers: headers,
+        );
+        final html = response.body;
+        if (_tryGetOndemandFileUrl(html) != null) {
+          return html;
+        }
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    throw lastError ?? Exception("Couldn't find ondemand file index");
+  }
+
+  static String? _tryGetOndemandFileUrl(String html) {
+    try {
+      return _getOndemandFileUrl(html);
+    } catch (_) {
+      return null;
+    }
+  }
+
   static String _getOndemandFileUrl(String html) {
+    final legacyMatch = onDemandFileLegacyRegex.firstMatch(html);
+    if (legacyMatch != null) {
+      return onDemandFileUrlTemplate.replaceAll(
+        '{filename}',
+        legacyMatch.group(1)!,
+      );
+    }
+
     final indexMatch = onDemandFileRegex.firstMatch(html);
-    if (indexMatch == null) throw Exception("Couldn't find ondemand file index");
+    if (indexMatch == null) {
+      throw Exception("Couldn't find ondemand file index");
+    }
+
     final fileIndex = indexMatch.group(1)!;
-    final hashRegex = RegExp(',${RegExp.escape(fileIndex)}:"([0-9a-f]+)"');
+    final hashRegex = RegExp(
+      ',${RegExp.escape(fileIndex)}:["\']([0-9a-f]+)["\']',
+    );
     final hashMatch = hashRegex.firstMatch(html);
-    if (hashMatch == null) throw Exception("Couldn't find ondemand file hash");
-    final filename = hashMatch.group(1)!;
-    return onDemandFileUrlTemplate.replaceAll('{filename}', filename);
+    if (hashMatch == null) {
+      throw Exception("Couldn't find ondemand file hash for chunk id $fileIndex");
+    }
+
+    return onDemandFileUrlTemplate.replaceAll(
+      '{filename}',
+      hashMatch.group(1)!,
+    );
   }
 
   static List<List<int>> _get2dArray(
